@@ -1,0 +1,46 @@
+# generate rust ci
+
+name: Rust CI
+
+on:
+  pull_request
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        shell: bash
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+          
+  dprint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install dprint
+        run: curl -fsSL https://dprint.dev/install.sh | sh
+
+      - name: add dprint to PATH
+        run: echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
+
+      - name: run dprint
+        run: dprint check
+
+  lint_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: clippy
+        run: cargo clippy
+
+      - name: test
+        run: cargo test

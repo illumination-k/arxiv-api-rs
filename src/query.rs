@@ -72,13 +72,13 @@ impl<S> ArxivQuery<S> {
 
 impl<S> ArxivQuery<S>
 where
-    S: AsRef<str>,
+    S: ToString,
 {
     fn query_map(&self) -> HashMap<&str, String> {
         let mut query_map = HashMap::new();
 
         if let Some(search_query) = &self.search_query {
-            query_map.insert("search_query", search_query.as_ref().to_string());
+            query_map.insert("search_query", search_query.to_string());
         }
 
         if !self.id_list.is_empty() {

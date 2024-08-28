@@ -1,8 +1,12 @@
 mod models;
 mod query;
+mod search_query;
 
 pub use models::ArxivResult;
 pub use query::*;
+pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
+
+use anyhow::anyhow;
 
 const BASE_URL: &str = "http://export.arxiv.org/api/query";
 
@@ -11,7 +15,6 @@ pub struct ArxivClient {
     client: reqwest::Client,
     interval: std::time::Duration,
     n_retries: usize,
-    last_request: std::time::Instant,
 }
 
 impl Default for ArxivClient {
@@ -20,7 +23,6 @@ impl Default for ArxivClient {
             client: reqwest::Client::new(),
             interval: std::time::Duration::from_secs(3),
             n_retries: 3,
-            last_request: std::time::Instant::now(),
         }
     }
 }
@@ -31,21 +33,20 @@ impl ArxivClient {
             client: reqwest::Client::new(),
             interval,
             n_retries,
-            last_request: std::time::Instant::now(),
         }
     }
 
-    pub async fn search(&self, query: ArxivQuery<&str>) -> anyhow::Result<Vec<ArxivResult>> {
-        if self.last_request.elapsed() < self.interval {
-            tokio::time::sleep(self.interval - self.last_request.elapsed()).await;
-        }
+    pub async fn search<S: ToString>(
+        &self,
+        query: ArxivQuery<S>,
+    ) -> anyhow::Result<Vec<ArxivResult>> {
+        let mut errors = vec![];
 
-        let mut results = Vec::new();
         for _ in 0..self.n_retries {
             let response = self.client.get(&query.to_url(BASE_URL)?).send().await;
 
             if let Err(e) = response {
-                eprintln!("Error: {}", e);
+                errors.push(e);
                 tokio::time::sleep(self.interval).await;
                 continue;
             }
@@ -55,10 +56,24 @@ impl ArxivClient {
             let text = response.text().await?;
             let feed = quick_xml::de::from_str::<models::Feed>(&text)?;
 
-            results.extend(feed.entries_.into_iter().map(ArxivResult::from_entry));
-            break;
+            return Ok(feed
+                .entries_
+                .into_iter()
+                .map(ArxivResult::from_entry)
+                .collect());
         }
-        Ok(results)
+
+        let err_msgs = errors
+            .into_iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        Err(anyhow!(
+            "Failed to fetch data from Arxiv after {} retries\n{}",
+            self.n_retries,
+            err_msgs
+        ))
     }
 }
 
@@ -81,9 +96,33 @@ mod test {
     #[tokio::test]
     async fn test_search_with_id_list() {
         let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
-        let query = ArxivQuery::default().with_id_list(vec!["2402.16893v1".to_string()]);
+        let query: ArxivQuery<&str> =
+            ArxivQuery::default().with_id_list(vec!["2402.16893v1".to_string()]);
 
         let results = client.search(query).await.unwrap();
         assert_eq!(results.len(), 1);
+
+        let result = &results[0];
+        assert_eq!(result.id, "http://arxiv.org/abs/2402.16893v1");
+        assert_eq!(result.title, "The Good and The Bad: Exploring Privacy Issues in Retrieval-Augmented\n  Generation (RAG)");
+    }
+
+    #[tokio::test]
+    async fn test_with_search_query() {
+        use search_query::{SearchField, SearchPredicate, SearchTerm};
+        let term1 = SearchTerm::new(SearchField::Title, "RAG");
+        let term2 = SearchTerm::new(SearchField::Abstract, "hallucination");
+        let search_query = SearchPredicate::and(term1, term2);
+        assert_eq!(search_query.to_string(), "ti:RAG AND abs:hallucination");
+
+        let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
+        let query = ArxivQuery::default()
+            .with_search_query(search_query)
+            .with_max_results(2);
+
+        let results = client.search(query).await.unwrap();
+        assert!(!results.is_empty());
+
+        print!("{:?}", results);
     }
 }

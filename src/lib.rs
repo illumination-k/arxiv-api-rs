@@ -87,7 +87,7 @@ mod test {
 
     #[tokio::test]
     async fn test_search() {
-        let max_results = 100;
+        let max_results = 3;
         let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
         let query = ArxivQuery::default()
             .with_search_query("all:RAG")

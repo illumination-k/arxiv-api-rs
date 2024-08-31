@@ -48,7 +48,7 @@ impl<S> ArxivQuery<S> {
         sort_order: Option<SortOrder>,
     ) -> Self {
         Self {
-            search_query: search_query,
+            search_query,
             id_list,
             start,
             max_results,

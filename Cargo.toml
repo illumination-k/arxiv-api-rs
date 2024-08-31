@@ -9,7 +9,7 @@ quick-xml = { version = "0.36.1", features = ["serialize", "overlapped-lists"] }
 reqwest = "0.12.5"
 serde = { version = "1.0.208", features = ["derive"] }
 serde_with = { version = "3.9.0", features = ["time_0_3"] }
-time = { version = "0.3.36", features = ["serde", "formatting"] }
+time = { version = "0.3.36", features = ["serde", "formatting", "macros"] }
 tokio = { version = "1.39.3", features = ["full"] }
 url = "2.5.2"
 

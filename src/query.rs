@@ -39,6 +39,24 @@ impl<S> Default for ArxivQuery<S> {
 }
 
 impl<S> ArxivQuery<S> {
+    pub fn new(
+        search_query: Option<S>,
+        id_list: Vec<String>,
+        start: usize,
+        max_results: usize,
+        sort_by: Option<SortBy>,
+        sort_order: Option<SortOrder>,
+    ) -> Self {
+        Self {
+            search_query: search_query,
+            id_list,
+            start,
+            max_results,
+            sort_by,
+            sort_order,
+        }
+    }
+
     pub fn with_search_query(mut self, search_query: S) -> Self {
         self.search_query = Some(search_query);
         self

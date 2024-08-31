@@ -79,6 +79,10 @@ impl ArxivClient {
 
 #[cfg(test)]
 mod test {
+    use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
+    use time::format_description::well_known::Rfc3339;
+    use time::OffsetDateTime;
+
     use super::*;
 
     #[tokio::test]
@@ -109,7 +113,6 @@ mod test {
 
     #[tokio::test]
     async fn test_with_search_query() {
-        use search_query::{SearchField, SearchPredicate, SearchTerm};
         let term1 = SearchTerm::new(SearchField::Title, "RAG");
         let term2 = SearchTerm::new(SearchField::Abstract, "hallucination");
         let search_query = SearchPredicate::and(term1, term2);
@@ -122,7 +125,43 @@ mod test {
 
         let results = client.search(query).await.unwrap();
         assert!(!results.is_empty());
+    }
 
-        print!("{:?}", results);
+    #[tokio::test]
+    async fn test_with_search_range() {
+        let start = OffsetDateTime::parse("2022-04-12T23:20:50.52Z", &Rfc3339).unwrap();
+        let end = OffsetDateTime::parse("2023-04-13T23:20:50.52Z", &Rfc3339).unwrap();
+
+        let range = SearchRange::new(RangeField::LastUpdatedDate, start, end);
+
+        let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
+        let query = ArxivQuery::default()
+            .with_search_query(range)
+            .with_max_results(2);
+
+        let results = client.search(query).await.unwrap();
+        assert!(!results.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_with_search_query_and_range() {
+        let term1 = SearchTerm::new(SearchField::Title, "graph");
+        let term2 = SearchTerm::new(SearchField::Abstract, "graph");
+        let search_query = SearchPredicate::and(term1, term2);
+
+        let start = OffsetDateTime::parse("2022-04-12T23:20:50.52Z", &Rfc3339).unwrap();
+        let end = OffsetDateTime::parse("2024-04-13T23:20:50.52Z", &Rfc3339).unwrap();
+        let range = SearchRange::new(RangeField::SubmittedDate, start, end);
+
+        let and_predicate = SearchPredicate::and(search_query, range);
+        //println!("{}", and_predicate.to_string());
+        let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
+        let query = ArxivQuery::default()
+            .with_search_query(and_predicate)
+            .with_max_results(2);
+
+        let results = client.search(query).await.unwrap();
+
+        assert_eq!(results.len(), 2);
     }
 }

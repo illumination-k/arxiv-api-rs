@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 
-use time::format_description::well_known::Iso8601;
+use time::format_description::well_known::{Iso8601, Rfc2822, Rfc3339};
+use time::macros::format_description;
 use time::OffsetDateTime;
 
 fn remove_outside_brackets(s: &str) -> String {
@@ -69,6 +70,38 @@ pub struct SearchRange {
 impl SearchRange {
     pub fn new(field: RangeField, start: OffsetDateTime, end: OffsetDateTime) -> Self {
         Self { field, start, end }
+    }
+
+    pub fn try_from_iso_8601(field: RangeField, start: &str, end: &str) -> anyhow::Result<Self> {
+        Ok(Self {
+            field,
+            start: OffsetDateTime::parse(start, &Iso8601::DEFAULT)?,
+            end: OffsetDateTime::parse(end, &Iso8601::DEFAULT)?,
+        })
+    }
+
+    pub fn try_from_rfc_3339(field: RangeField, start: &str, end: &str) -> anyhow::Result<Self> {
+        Ok(Self {
+            field,
+            start: OffsetDateTime::parse(start, &Rfc3339)?,
+            end: OffsetDateTime::parse(end, &Rfc3339)?,
+        })
+    }
+
+    pub fn try_from_rfc_2822(field: RangeField, start: &str, end: &str) -> anyhow::Result<Self> {
+        Ok(Self {
+            field,
+            start: OffsetDateTime::parse(start, &Rfc2822)?,
+            end: OffsetDateTime::parse(end, &Rfc2822)?,
+        })
+    }
+
+    pub fn try_from_date(field: RangeField, start: &str, end: &str) -> anyhow::Result<Self> {
+        Ok(Self {
+            field,
+            start: OffsetDateTime::parse(start, format_description!("[year]-[month]-[day]"))?,
+            end: OffsetDateTime::parse(end, format_description!("[year]-[month]-[day]"))?,
+        })
     }
 }
 

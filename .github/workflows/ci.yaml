@@ -38,14 +38,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - uses: actions/cache@v2
         with:
-          toolchain: stable
-          components: clippy
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: format
+        run: cargo fmt --check
 
-      - name: clippy
+      - name: lint
         run: cargo clippy
 
-      - name: test
+      - name: build
         run: cargo test

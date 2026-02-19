@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Context as _;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub enum SortBy {
@@ -135,6 +136,7 @@ where
             .with_context(|| format!("Failed to parse URL with params: {:?}", self.query_map()))?
             .to_string();
 
+        debug!(url = %url, "Built query URL");
         Ok(url)
     }
 }

@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/hPYTw0sR0eLmGUEBBMkIHR7VRq0</id>
+  <title>arXiv Query: search_query=(ti:graph AND abs:graph) AND submittedDate:"202204120000 TO 202404132359"&amp;id_list=&amp;start=0&amp;max_results=2</title>
+  <updated>2026-02-19T23:44:02Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=(ti:graph+AND+abs:graph)+AND+submittedDate:%22202204120000+TO+202404132359%22&amp;start=0&amp;max_results=2&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>11442</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2310.17936v1</id>
+    <title>Transformers as Graph-to-Graph Models</title>
+    <updated>2023-10-27T07:21:37Z</updated>
+    <link href="https://arxiv.org/abs/2310.17936v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2310.17936v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We argue that Transformers are essentially graph-to-graph models, with sequences just being a special case. Attention weights are functionally equivalent to graph edges. Our Graph-to-Graph Transformer architecture makes this ability explicit, by inputting graph edges into the attention weight computations and predicting graph edges with attention-like functions, thereby integrating explicit graphs into the latent graphs learned by pretrained Transformers. Adding iterative graph refinement provides a joint embedding of input, output, and latent graphs, allowing non-autoregressive graph prediction to optimise the complete graph without any bespoke pipeline or decoding strategy. Empirical results show that this architecture achieves state-of-the-art accuracies for modelling a variety of linguistic structures, integrating very effectively with the latent linguistic representations learned by pretraining.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-10-27T07:21:37Z</published>
+    <arxiv:comment>Accepted to Big Picture workshop at EMNLP 2023</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>James Henderson</name>
+    </author>
+    <author>
+      <name>Alireza Mohammadshahi</name>
+    </author>
+    <author>
+      <name>Andrei C. Coman</name>
+    </author>
+    <author>
+      <name>Lesly Miculicich</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2211.06980v2</id>
+    <title>Burling graphs as intersection graphs</title>
+    <updated>2023-08-29T13:22:42Z</updated>
+    <link href="https://arxiv.org/abs/2211.06980v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2211.06980v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>For a subset $ S $ of $ \mathbb R^d$, $ S$-graphs are the intersection graphs of specific transformations of $ S $. The class of Burling graphs is a class of triangle-free graphs with arbitrarily large chromatic number that has attracted much attention in the last years. In 2012, Pawlik, Kozik, Krawczyk, Lasoń, Micek, Trotter, and Walczak showed that for every compact and path-connected set $ S \subseteq \mathbb R^2$ that is different from an axis-parallel rectangle, the class of $ S $-graphs contains all Burling graphs. There is, however, a gap between the two classes. In recent years, there have been improvements in understanding the subclasses of $ S $-graphs that are closer or equal to Burling graphs. In this article, we close this gap for every set $ S $ with the mentioned properties: we introduce the class of constrained $ S $-graphs, a subclass of $ S$-graphs, and prove that it is equal to the class of Burling graphs. We also introduce the class of constrained graphs, a subclass of intersection graphs of subsets of $ \mathbb R^2$, and prove that it is equal to the class of Burling graphs.</summary>
+    <category term="math.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2022-11-13T18:12:56Z</published>
+    <arxiv:comment>27 pages, 9 figures</arxiv:comment>
+    <arxiv:primary_category term="math.CO"/>
+    <author>
+      <name>Pegah Pournajafi</name>
+    </author>
+  </entry>
+</feed>

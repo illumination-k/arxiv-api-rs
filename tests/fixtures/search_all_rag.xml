@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/BXRIISubtF5i/Mm6bVjkpgzwy7Y</id>
+  <title>arXiv Query: search_query=all:RAG&amp;id_list=&amp;start=0&amp;max_results=3</title>
+  <updated>2026-02-19T23:42:36Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:RAG&amp;start=0&amp;max_results=3&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+  <opensearch:totalResults>4166</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2502.13957v2</id>
+    <title>RAG-Gym: Systematic Optimization of Language Agents for Retrieval-Augmented Generation</title>
+    <updated>2025-05-31T23:32:16Z</updated>
+    <link href="https://arxiv.org/abs/2502.13957v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2502.13957v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Retrieval-augmented generation (RAG) has shown great promise for knowledge-intensive tasks and recently advanced with agentic RAG, where language agents engage in multi-round interactions with external knowledge sources for adaptive information retrieval. However, existing agentic RAG methods often depend on ad-hoc prompt engineering and lack a unified optimization framework. We introduce RAG-Gym, a comprehensive platform that systematically explores three optimization dimensions: (1) prompt engineering, (2) actor tuning, and (3) critic training. For prompt engineering, we propose Re$^2$Search, a novel agent incorporating reasoning reflection that significantly outperforms standard prompts. In actor tuning, we evaluate three popular post-training algorithms with fine-grained process supervision and identify direct preference optimization as the most effective. We further demonstrate that a trained critic can enhance inference by selecting higher-quality intermediate reasoning steps. Together, these findings lead to the optimized Re$^2$Search++ agent, which surpasses most recent methods like Search-R1 by a relative increase of 3.2% to 11.6% in average F1. Finally, we examine the impact of different reward sources and analyze scaling properties in training and inference, offering practical insights for agentic RAG optimization. The project homepage is available at https://rag-gym.github.io.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-02-19T18:56:03Z</published>
+    <arxiv:comment>Homepage: https://rag-gym.github.io; Code: https://github.com/RAG-Gym/RAG-Gym</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Guangzhi Xiong</name>
+    </author>
+    <author>
+      <name>Qiao Jin</name>
+    </author>
+    <author>
+      <name>Xiao Wang</name>
+    </author>
+    <author>
+      <name>Yin Fang</name>
+    </author>
+    <author>
+      <name>Haolin Liu</name>
+    </author>
+    <author>
+      <name>Yifan Yang</name>
+    </author>
+    <author>
+      <name>Fangyuan Chen</name>
+    </author>
+    <author>
+      <name>Zhixing Song</name>
+    </author>
+    <author>
+      <name>Dengyu Wang</name>
+    </author>
+    <author>
+      <name>Minjia Zhang</name>
+    </author>
+    <author>
+      <name>Zhiyong Lu</name>
+    </author>
+    <author>
+      <name>Aidong Zhang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2401.15391v1</id>
+    <title>MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries</title>
+    <updated>2024-01-27T11:41:48Z</updated>
+    <link href="https://arxiv.org/abs/2401.15391v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2401.15391v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Retrieval-augmented generation (RAG) augments large language models (LLM) by retrieving relevant knowledge, showing promising potential in mitigating LLM hallucinations and enhancing response quality, thereby facilitating the great adoption of LLMs in practice. However, we find that existing RAG systems are inadequate in answering multi-hop queries, which require retrieving and reasoning over multiple pieces of supporting evidence. Furthermore, to our knowledge, no existing RAG benchmarking dataset focuses on multi-hop queries. In this paper, we develop a novel dataset, MultiHop-RAG, which consists of a knowledge base, a large collection of multi-hop queries, their ground-truth answers, and the associated supporting evidence. We detail the procedure of building the dataset, utilizing an English news article dataset as the underlying RAG knowledge base. We demonstrate the benchmarking utility of MultiHop-RAG in two experiments. The first experiment compares different embedding models for retrieving evidence for multi-hop queries. In the second experiment, we examine the capabilities of various state-of-the-art LLMs, including GPT-4, PaLM, and Llama2-70B, in reasoning and answering multi-hop queries given the evidence. Both experiments reveal that existing RAG methods perform unsatisfactorily in retrieving and answering multi-hop queries. We hope MultiHop-RAG will be a valuable resource for the community in developing effective RAG systems, thereby facilitating greater adoption of LLMs in practice. The MultiHop-RAG and implemented RAG system is publicly available at https://github.com/yixuantt/MultiHop-RAG/.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-01-27T11:41:48Z</published>
+    <arxiv:comment>Link: https://github.com/yixuantt/MultiHop-RAG/</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Yixuan Tang</name>
+    </author>
+    <author>
+      <name>Yi Yang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2412.12881v1</id>
+    <title>RAG-Star: Enhancing Deliberative Reasoning with Retrieval Augmented Verification and Refinement</title>
+    <updated>2024-12-17T13:05:36Z</updated>
+    <link href="https://arxiv.org/abs/2412.12881v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2412.12881v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Existing large language models (LLMs) show exceptional problem-solving capabilities but might struggle with complex reasoning tasks. Despite the successes of chain-of-thought and tree-based search methods, they mainly depend on the internal knowledge of LLMs to search over intermediate reasoning steps, limited to dealing with simple tasks involving fewer reasoning steps. In this paper, we propose \textbf{RAG-Star}, a novel RAG approach that integrates the retrieved information to guide the tree-based deliberative reasoning process that relies on the inherent knowledge of LLMs. By leveraging Monte Carlo Tree Search, RAG-Star iteratively plans intermediate sub-queries and answers for reasoning based on the LLM itself. To consolidate internal and external knowledge, we propose an retrieval-augmented verification that utilizes query- and answer-aware reward modeling to provide feedback for the inherent reasoning of LLMs. Our experiments involving Llama-3.1-8B-Instruct and GPT-4o demonstrate that RAG-Star significantly outperforms previous RAG and reasoning methods.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-12-17T13:05:36Z</published>
+    <arxiv:comment>LLM;RAG;MCTS</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Jinhao Jiang</name>
+    </author>
+    <author>
+      <name>Jiayi Chen</name>
+    </author>
+    <author>
+      <name>Junyi Li</name>
+    </author>
+    <author>
+      <name>Ruiyang Ren</name>
+    </author>
+    <author>
+      <name>Shijie Wang</name>
+    </author>
+    <author>
+      <name>Wayne Xin Zhao</name>
+    </author>
+    <author>
+      <name>Yang Song</name>
+    </author>
+    <author>
+      <name>Tao Zhang</name>
+    </author>
+  </entry>
+</feed>

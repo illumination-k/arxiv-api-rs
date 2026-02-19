@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/FShwo/n5YnCq8MEKPP8EJVttbw8</id>
+  <title>arXiv Query: search_query=ti:RAG AND abs:hallucination&amp;id_list=&amp;start=0&amp;max_results=2</title>
+  <updated>2026-02-19T23:42:45Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=ti:RAG+AND+abs:hallucination&amp;start=0&amp;max_results=2&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>206</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2601.08226v1</id>
+    <title>Knowledge-based learning in Text-RAG and Image-RAG</title>
+    <updated>2026-01-13T05:14:18Z</updated>
+    <link href="https://arxiv.org/abs/2601.08226v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2601.08226v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This research analyzed and compared the multi-modal approach in the Vision Transformer(EVA-ViT) based image encoder with the LlaMA or ChatGPT LLM to reduce the hallucination problem and detect diseases in chest x-ray images. In this research, we utilized the NIH Chest X-ray image to train the model and compared it in image-based RAG, text-based RAG, and baseline. [3] [5] In a result, the text-based RAG[2] e!ectively reduces the hallucination problem by using external knowledge information, and the image-based RAG improved the prediction con"dence and calibration by using the KNN methods. [4] Moreover, the GPT LLM showed better performance, a low hallucination rate, and better Expected Calibration Error(ECE) than Llama Llama-based model. This research shows the challenge of data imbalance, a complex multi-stage structure, but suggests a large experience environment and a balanced example of use.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2026-01-13T05:14:18Z</published>
+    <arxiv:comment>9 pages, 10 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Alexander Shim</name>
+    </author>
+    <author>
+      <name>Khalil Saieh</name>
+    </author>
+    <author>
+      <name>Samuel Clarke</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2505.04847v2</id>
+    <title>Benchmarking LLM Faithfulness in RAG with Evolving Leaderboards</title>
+    <updated>2025-11-06T15:46:58Z</updated>
+    <link href="https://arxiv.org/abs/2505.04847v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2505.04847v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Retrieval-augmented generation (RAG) aims to reduce hallucinations by grounding responses in external context, yet large language models (LLMs) still frequently introduce unsupported information or contradictions even when provided with relevant context. This paper presents two complementary efforts at Vectara to measure and benchmark LLM faithfulness in RAG. First, we describe our original hallucination leaderboard, which has tracked hallucination rates for LLMs since 2023 using our HHEM hallucination detection model. Motivated by limitations observed in current hallucination detection methods, we introduce FaithJudge, an LLM-as-a-judge framework that leverages a pool of diverse human-annotated hallucination examples to substantially improve the automated hallucination evaluation of LLMs. We introduce an enhanced hallucination leaderboard centered on FaithJudge that benchmarks LLMs on RAG faithfulness in summarization, question-answering, and data-to-text generation tasks. FaithJudge enables a more reliable benchmarking of LLM hallucinations in RAG and supports the development of more trustworthy generative AI systems: https://github.com/vectara/FaithJudge.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2025-05-07T22:50:33Z</published>
+    <arxiv:comment>EMNLP Industry Track 2025</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Manveer Singh Tamber</name>
+    </author>
+    <author>
+      <name>Forrest Sheng Bao</name>
+    </author>
+    <author>
+      <name>Chenyu Xu</name>
+    </author>
+    <author>
+      <name>Ge Luo</name>
+    </author>
+    <author>
+      <name>Suleman Kazi</name>
+    </author>
+    <author>
+      <name>Minseok Bae</name>
+    </author>
+    <author>
+      <name>Miaoran Li</name>
+    </author>
+    <author>
+      <name>Ofer Mendelevitch</name>
+    </author>
+    <author>
+      <name>Renyi Qu</name>
+    </author>
+    <author>
+      <name>Jimmy Lin</name>
+    </author>
+  </entry>
+</feed>

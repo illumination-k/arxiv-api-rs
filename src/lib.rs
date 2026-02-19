@@ -139,12 +139,7 @@ mod test {
         assert!(!response.results.is_empty());
     }
 
-    // NOTE: arXiv API does not support ISO 8601 nanosecond precision in date range queries.
-    // SearchRange currently formats dates with Iso8601::DEFAULT which includes nanoseconds,
-    // causing arXiv to return a server error. These tests are ignored until the date format
-    // is fixed. See fixture tests in models::test for offline coverage.
     #[tokio::test]
-    #[ignore = "arXiv API rejects ISO 8601 nanosecond precision dates"]
     async fn test_with_search_range() {
         let start = OffsetDateTime::parse("2022-04-12T23:20:50.52Z", &Rfc3339).unwrap();
         let end = OffsetDateTime::parse("2023-04-13T23:20:50.52Z", &Rfc3339).unwrap();
@@ -161,7 +156,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore = "arXiv API rejects ISO 8601 nanosecond precision dates"]
     async fn test_with_search_query_and_range() {
         let term1 = SearchTerm::new(SearchField::Title, "graph");
         let term2 = SearchTerm::new(SearchField::Abstract, "graph");

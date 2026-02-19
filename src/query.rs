@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use anyhow::Context as _;
 use tracing::debug;
+
+use crate::error::ArxivError;
 
 #[derive(Debug, Clone)]
 pub enum SortBy {
@@ -131,9 +132,12 @@ where
         query_map
     }
 
-    pub(crate) fn to_url(&self, base: &str) -> anyhow::Result<String> {
+    pub(crate) fn to_url(&self, base: &str) -> crate::error::Result<String> {
         let url = url::Url::parse_with_params(base, self.query_map())
-            .with_context(|| format!("Failed to parse URL with params: {:?}", self.query_map()))?
+            .map_err(|e| ArxivError::UrlParse {
+                source: e,
+                params: format!("{:?}", self.query_map()),
+            })?
             .to_string();
 
         debug!(url = %url, "Built query URL");

@@ -9,6 +9,7 @@
 ```
 src/
 ├── lib.rs            # Library entry point, ArxivClient (HTTP client with retries), re-exports
+├── error.rs          # ArxivError enum (thiserror), Result type alias
 ├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
 ├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
 └── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
@@ -66,7 +67,7 @@ Run all tests with `cargo test`. There is no separate integration test directory
 
 ## Code Conventions
 
-- **Error handling**: Uses `anyhow::Result<T>` and `anyhow::Context` for adding context to errors. No custom error types.
+- **Error handling**: Uses `thiserror` with a custom `ArxivError` enum in `error.rs`. Public API returns `crate::Result<T>` (alias for `Result<T, ArxivError>`). Error variants include `RequestFailed`, `HttpStatus`, `ResponseBody`, `XmlParse`, `UrlParse`, and `DateTimeParse`, each wrapping the underlying error as a `#[source]`.
 - **Async runtime**: Tokio with `features = ["full"]`. All I/O is async.
 - **Logging**: `tracing` crate with `#[instrument]` attributes, `debug!` and `warn!` macros.
 - **Serialization**: `serde` + `quick-xml` for XML deserialization. `serde_with` for datetime handling. XML field renames use `@` prefix for attributes (`@title`, `@rel`, etc.).
@@ -80,7 +81,7 @@ Run all tests with `cargo test`. There is no separate integration test directory
 
 | Crate | Purpose |
 |-------|---------|
-| `anyhow` | Error handling |
+| `thiserror` | Derive macro for custom error types |
 | `quick-xml` | XML parsing (with `serialize`, `overlapped-lists` features) |
 | `reqwest` | HTTP client |
 | `serde` | Serialization/deserialization (with `derive`) |

@@ -1,12 +1,13 @@
+mod error;
 mod models;
 mod query;
 mod search_query;
 
+pub use error::{ArxivError, Result};
 pub use models::ArxivResult;
 pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
 
-use anyhow::anyhow;
 use tracing::{debug, instrument, warn};
 
 const BASE_URL: &str = "http://export.arxiv.org/api/query";
@@ -38,10 +39,7 @@ impl ArxivClient {
     }
 
     #[instrument(skip(self, query), fields(n_retries = self.n_retries))]
-    pub async fn search<S: ToString>(
-        &self,
-        query: ArxivQuery<S>,
-    ) -> anyhow::Result<Vec<ArxivResult>> {
+    pub async fn search<S: ToString>(&self, query: ArxivQuery<S>) -> Result<Vec<ArxivResult>> {
         let url = query.to_url(BASE_URL)?;
         debug!(url = %url, "Fetching from arXiv API");
 
@@ -49,21 +47,30 @@ impl ArxivClient {
 
         for attempt in 1..=self.n_retries {
             debug!(attempt, "Sending request");
-            let response = self.client.get(&url).send().await;
+            let response = match self.client.get(&url).send().await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    warn!(attempt, error = %e, "Request failed");
+                    errors.push(e);
+                    tokio::time::sleep(self.interval).await;
+                    continue;
+                }
+            };
 
-            if let Err(e) = response {
-                warn!(attempt, error = %e, "Request failed");
-                errors.push(e);
-                tokio::time::sleep(self.interval).await;
-                continue;
-            }
-
-            let response = response.unwrap();
             let status = response.status();
             debug!(%status, "Received response");
 
-            let text = response.text().await?;
-            let feed = quick_xml::de::from_str::<models::Feed>(&text)?;
+            if !status.is_success() {
+                let body = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| String::from("<failed to read body>"));
+                return Err(ArxivError::HttpStatus { status, body });
+            }
+
+            let text = response.text().await.map_err(ArxivError::ResponseBody)?;
+            let feed =
+                quick_xml::de::from_str::<models::Feed>(&text).map_err(ArxivError::XmlParse)?;
 
             let results: Vec<ArxivResult> = feed
                 .entries_
@@ -75,17 +82,10 @@ impl ArxivClient {
             return Ok(results);
         }
 
-        let err_msgs = errors
-            .into_iter()
-            .map(|e| e.to_string())
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        Err(anyhow!(
-            "Failed to fetch data from Arxiv after {} retries\n{}",
-            self.n_retries,
-            err_msgs
-        ))
+        Err(ArxivError::RequestFailed {
+            retries: self.n_retries,
+            errors,
+        })
     }
 }
 

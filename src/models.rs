@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::serde::iso8601;
 use time::OffsetDateTime;
+use tracing::warn;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Feed {
@@ -43,7 +44,7 @@ impl Entry {
         let ret = pdf_links.next().map(|link| link.href.clone());
 
         if pdf_links.next().is_some() {
-            eprintln!("Multiple pdf links found for entry: {}", self.id);
+            warn!(entry_id = %self.id, "Multiple pdf links found for entry");
         }
 
         ret

@@ -7,6 +7,7 @@ pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
 
 use anyhow::anyhow;
+use tracing::{debug, instrument, warn};
 
 const BASE_URL: &str = "http://export.arxiv.org/api/query";
 
@@ -36,31 +37,42 @@ impl ArxivClient {
         }
     }
 
+    #[instrument(skip(self, query), fields(n_retries = self.n_retries))]
     pub async fn search<S: ToString>(
         &self,
         query: ArxivQuery<S>,
     ) -> anyhow::Result<Vec<ArxivResult>> {
+        let url = query.to_url(BASE_URL)?;
+        debug!(url = %url, "Fetching from arXiv API");
+
         let mut errors = vec![];
 
-        for _ in 0..self.n_retries {
-            let response = self.client.get(&query.to_url(BASE_URL)?).send().await;
+        for attempt in 1..=self.n_retries {
+            debug!(attempt, "Sending request");
+            let response = self.client.get(&url).send().await;
 
             if let Err(e) = response {
+                warn!(attempt, error = %e, "Request failed");
                 errors.push(e);
                 tokio::time::sleep(self.interval).await;
                 continue;
             }
 
             let response = response.unwrap();
+            let status = response.status();
+            debug!(%status, "Received response");
 
             let text = response.text().await?;
             let feed = quick_xml::de::from_str::<models::Feed>(&text)?;
 
-            return Ok(feed
+            let results: Vec<ArxivResult> = feed
                 .entries_
                 .into_iter()
                 .map(ArxivResult::from_entry)
-                .collect());
+                .collect();
+
+            debug!(count = results.len(), "Search completed");
+            return Ok(results);
         }
 
         let err_msgs = errors

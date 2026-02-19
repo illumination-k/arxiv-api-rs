@@ -5,6 +5,12 @@ use tracing::warn;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Feed {
+    #[serde(rename = "opensearch:totalResults", default)]
+    pub total_results_: usize,
+    #[serde(rename = "opensearch:startIndex", default)]
+    pub start_index_: usize,
+    #[serde(rename = "opensearch:itemsPerPage", default)]
+    pub items_per_page_: usize,
     #[serde(rename = "entry", default)]
     pub entries_: Vec<Entry>,
 }
@@ -59,13 +65,13 @@ pub struct Author {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Link {
     #[serde(rename = "@title")]
-    title: Option<String>,
+    pub title: Option<String>,
     #[serde(rename = "@rel")]
-    rel: String,
+    pub rel: String,
     #[serde(rename = "@href")]
-    href: String,
+    pub href: String,
     #[serde(rename = "@type")]
-    content_type: Option<String>,
+    pub content_type: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -97,6 +103,35 @@ pub struct ArxivResult {
     pub published: OffsetDateTime,
     #[serde(with = "iso8601")]
     pub updated: OffsetDateTime,
+}
+
+/// Response from an arXiv API search, including pagination metadata.
+#[derive(Debug, Clone)]
+pub struct SearchResponse {
+    /// Total number of results matching the query.
+    pub total_results: usize,
+    /// The index of the first result in this response.
+    pub start_index: usize,
+    /// The number of results per page.
+    pub items_per_page: usize,
+    /// The arXiv paper results.
+    pub results: Vec<ArxivResult>,
+}
+
+impl SearchResponse {
+    pub(crate) fn from_feed(feed: Feed) -> Self {
+        let results = feed
+            .entries_
+            .into_iter()
+            .map(ArxivResult::from_entry)
+            .collect();
+        Self {
+            total_results: feed.total_results_,
+            start_index: feed.start_index_,
+            items_per_page: feed.items_per_page_,
+            results,
+        }
+    }
 }
 
 impl ArxivResult {

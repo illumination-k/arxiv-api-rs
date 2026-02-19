@@ -4,7 +4,7 @@ mod query;
 mod search_query;
 
 pub use error::{ArxivError, Result};
-pub use models::ArxivResult;
+pub use models::{ArxivResult, Link, SearchResponse};
 pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
 
@@ -39,7 +39,7 @@ impl ArxivClient {
     }
 
     #[instrument(skip(self, query), fields(n_retries = self.n_retries))]
-    pub async fn search<S: ToString>(&self, query: ArxivQuery<S>) -> Result<Vec<ArxivResult>> {
+    pub async fn search<S: ToString>(&self, query: ArxivQuery<S>) -> Result<SearchResponse> {
         let url = query.to_url(BASE_URL)?;
         debug!(url = %url, "Fetching from arXiv API");
 
@@ -72,14 +72,9 @@ impl ArxivClient {
             let feed =
                 quick_xml::de::from_str::<models::Feed>(&text).map_err(ArxivError::XmlParse)?;
 
-            let results: Vec<ArxivResult> = feed
-                .entries_
-                .into_iter()
-                .map(ArxivResult::from_entry)
-                .collect();
-
-            debug!(count = results.len(), "Search completed");
-            return Ok(results);
+            let response = SearchResponse::from_feed(feed);
+            debug!(count = response.results.len(), "Search completed");
+            return Ok(response);
         }
 
         Err(ArxivError::RequestFailed {
@@ -105,8 +100,11 @@ mod test {
             .with_search_query("all:RAG")
             .with_max_results(max_results);
 
-        let results = client.search(query).await.unwrap();
-        assert_eq!(results.len(), max_results);
+        let response = client.search(query).await.unwrap();
+        assert_eq!(response.results.len(), max_results);
+        assert!(response.total_results > 0);
+        assert_eq!(response.start_index, 0);
+        assert_eq!(response.items_per_page, max_results);
     }
 
     #[tokio::test]
@@ -115,10 +113,10 @@ mod test {
         let query: ArxivQuery<&str> =
             ArxivQuery::default().with_id_list(vec!["2402.16893v1".to_string()]);
 
-        let results = client.search(query).await.unwrap();
-        assert_eq!(results.len(), 1);
+        let response = client.search(query).await.unwrap();
+        assert_eq!(response.results.len(), 1);
 
-        let result = &results[0];
+        let result = &response.results[0];
         assert_eq!(result.id, "http://arxiv.org/abs/2402.16893v1");
         assert_eq!(result.title, "The Good and The Bad: Exploring Privacy Issues in Retrieval-Augmented\n  Generation (RAG)");
     }
@@ -135,8 +133,8 @@ mod test {
             .with_search_query(search_query)
             .with_max_results(2);
 
-        let results = client.search(query).await.unwrap();
-        assert!(!results.is_empty());
+        let response = client.search(query).await.unwrap();
+        assert!(!response.results.is_empty());
     }
 
     #[tokio::test]
@@ -151,8 +149,8 @@ mod test {
             .with_search_query(range)
             .with_max_results(2);
 
-        let results = client.search(query).await.unwrap();
-        assert!(!results.is_empty());
+        let response = client.search(query).await.unwrap();
+        assert!(!response.results.is_empty());
     }
 
     #[tokio::test]
@@ -166,14 +164,12 @@ mod test {
         let range = SearchRange::new(RangeField::SubmittedDate, start, end);
 
         let and_predicate = SearchPredicate::and(search_query, range);
-        //println!("{}", and_predicate.to_string());
         let client = ArxivClient::new(std::time::Duration::from_secs(1), 3);
         let query = ArxivQuery::default()
             .with_search_query(and_predicate)
             .with_max_results(2);
 
-        let results = client.search(query).await.unwrap();
-
-        assert_eq!(results.len(), 2);
+        let response = client.search(query).await.unwrap();
+        assert_eq!(response.results.len(), 2);
     }
 }

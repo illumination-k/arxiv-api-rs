@@ -84,6 +84,11 @@ impl<S> ArxivQuery<S> {
         self
     }
 
+    pub fn with_sort_order(mut self, sort_order: SortOrder) -> Self {
+        self.sort_order = Some(sort_order);
+        self
+    }
+
     pub fn next_page_query(mut self) -> Self {
         self.start += self.max_results;
         self
@@ -172,6 +177,25 @@ mod test {
             "search_query" => "all:RAG".to_string(),
             "start" => "0".to_string(),
             "max_results" => "10".to_string(),
+        };
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_with_sort_order() {
+        let query = ArxivQuery::default()
+            .with_search_query("all:RAG")
+            .with_sort_by(SortBy::SubmittedDate)
+            .with_sort_order(SortOrder::Descending);
+
+        let actual = query.query_map();
+        let expected = hashmap! {
+            "search_query" => "all:RAG".to_string(),
+            "start" => "0".to_string(),
+            "max_results" => "10".to_string(),
+            "sortBy" => "submittedDate".to_string(),
+            "sortOrder" => "descending".to_string(),
         };
 
         assert_eq!(actual, expected);

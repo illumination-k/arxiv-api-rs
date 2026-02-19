@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/Lv2SVlPGzCFoxYmL7fd3p0qBeas</id>
+  <title>arXiv Query: search_query=&amp;id_list=2402.16893v1&amp;start=0&amp;max_results=10</title>
+  <updated>2026-02-19T23:42:41Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=&amp;start=0&amp;max_results=10&amp;id_list=2402.16893v1" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>10</opensearch:itemsPerPage>
+  <opensearch:totalResults>1</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2402.16893v1</id>
+    <title>The Good and The Bad: Exploring Privacy Issues in Retrieval-Augmented Generation (RAG)</title>
+    <updated>2024-02-23T18:35:15Z</updated>
+    <link href="https://arxiv.org/abs/2402.16893v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2402.16893v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Retrieval-augmented generation (RAG) is a powerful technique to facilitate language model with proprietary and private data, where data privacy is a pivotal concern. Whereas extensive research has demonstrated the privacy risks of large language models (LLMs), the RAG technique could potentially reshape the inherent behaviors of LLM generation, posing new privacy issues that are currently under-explored. In this work, we conduct extensive empirical studies with novel attack methods, which demonstrate the vulnerability of RAG systems on leaking the private retrieval database. Despite the new risk brought by RAG on the retrieval data, we further reveal that RAG can mitigate the leakage of the LLMs' training data. Overall, we provide new insights in this paper for privacy protection of retrieval-augmented LLMs, which benefit both LLMs and RAG systems builders. Our code is available at https://github.com/phycholosogy/RAG-privacy.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2024-02-23T18:35:15Z</published>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Shenglai Zeng</name>
+    </author>
+    <author>
+      <name>Jiankun Zhang</name>
+    </author>
+    <author>
+      <name>Pengfei He</name>
+    </author>
+    <author>
+      <name>Yue Xing</name>
+    </author>
+    <author>
+      <name>Yiding Liu</name>
+    </author>
+    <author>
+      <name>Han Xu</name>
+    </author>
+    <author>
+      <name>Jie Ren</name>
+    </author>
+    <author>
+      <name>Shuaiqiang Wang</name>
+    </author>
+    <author>
+      <name>Dawei Yin</name>
+    </author>
+    <author>
+      <name>Yi Chang</name>
+    </author>
+    <author>
+      <name>Jiliang Tang</name>
+    </author>
+  </entry>
+</feed>

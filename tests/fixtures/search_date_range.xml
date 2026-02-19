@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/OVGFYQ6zobqFLaUzTrMeLIUy6yY</id>
+  <title>arXiv Query: search_query=submittedDate:"202204120000 TO 202304132359"&amp;id_list=&amp;start=0&amp;max_results=2</title>
+  <updated>2026-02-19T23:43:25Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=submittedDate:%22202204120000+TO+202304132359%22&amp;start=0&amp;max_results=2&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>189433</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/2303.00676v3</id>
+    <title>Ulrich Bundles on some threefold scrolls over $\mathbb{F}_e$</title>
+    <updated>2023-11-07T07:34:02Z</updated>
+    <link href="https://arxiv.org/abs/2303.00676v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2303.00676v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We investigate the existence of Ulrich vector bundles on suitable $3$-fold scrolls $X_e$ over Hirzebruch surfaces $\mathbb{F}_e$, for any integer $e \geqslant 0$, which arise as tautological embeddings of projectivization of very-ample vector bundles on $\mathbb{F}_e$ that are uniform in the sense of Brosius and Aprodu--Brinzanescu.
+  We explicitely describe components of moduli spaces of rank $r \geqslant 1$ vector bundles which are Ulrich with respect to the tautological polarization on $X_e$ and whose general point is a slope-stable, indecomposable vector bundle. We moreover determine the dimension of such components, proving also that they are generically smooth. As a direct consequence of these facts, we also compute the Ulrich complexity of any such $X_e$ and give an effective proof of the fact that these $X_e$'s turn out to be geometrically Ulrich wild.
+  At last, the machinery developed for $3$--fold scrolls $X_e$ allows us to deduce Ulrichness results on rank $r \geqslant 1$ vector bundles on $\mathbb{F}_e$, for any $e \geqslant 0$, with respect to a naturally associated (very ample) polarization.</summary>
+    <category term="math.AG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-03-01T17:17:31Z</published>
+    <arxiv:comment>41 pages, to appear in Advances in Mathematics. The authors would like to deeply thank the anonymous referee for his/her enthusiastic report, full of encouragement and with important advices to improve the presentation</arxiv:comment>
+    <arxiv:primary_category term="math.AG"/>
+    <author>
+      <name>Maria Lucia Fania</name>
+    </author>
+    <author>
+      <name>Flaminio Flamini</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2303.00677v2</id>
+    <title>Improved Analysis of the Breakup Corrections to the High Energy $^3$He Beam Polarization measurements with HJET</title>
+    <updated>2023-05-22T15:52:33Z</updated>
+    <link href="https://arxiv.org/abs/2303.00677v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2303.00677v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The requirements for hadron polarimetry at the future Electron Ion Collider (EIC) include measurements of the absolute helion ($^3$He, $h$) beam polarization with systematic uncertainties better than $σ^\text{syst}_P/P\le1\%$. Recently, it was suggested to utilize the Polarized Atomic Hydrogen Gas Jet Target (HJET) for precision measurement of the polarization of the $\sim$100 GeV/n helion beam. At the Relativistic Heavy Ion Collider, HJET serves to determine absolute proton beam polarization with low systematic uncertainties of about $δ^\text{syst}P/P\lesssim0.5\%$. To adapt the HJET method for the EIC helion beam, the experimentally determined ratio of the beam and target (jet) spin correlated asymmetries should be adjusted by the ratio of $p^\uparrow{h}$ and $h^\uparrow{p}$ analyzing powers $A_\text{N}^{ph}(t)/A_\text{N}^{hp}(t)$ which, in the leading order approximation, is predefined by magnetic moments of the proton and helion, $(μ_p-1)/(μ_h/2-1/3)$. However, to achieve the required accuracy in the measured polarization, the corrections due to hadronic spin-flip amplitudes and due to possible beam $^3$He breakup should be considered. Here a more accurate analysis of the possible breakup corrections to the measured $^3$He beam polarization is provided. The results confirm that the breakup corrections are negligible for the EIC helion beam absolute polarization measurement by HJET.</summary>
+    <category term="hep-ph" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-03-01T17:17:39Z</published>
+    <arxiv:comment>10 pages, 8 figures, Presented at the VIII international conference on High Energy Physics in the LHC Era, Jan 9-13, 2023, Valparaiso, Chile</arxiv:comment>
+    <arxiv:primary_category term="hep-ph"/>
+    <author>
+      <name>A. A. Poblaguev</name>
+    </author>
+  </entry>
+</feed>

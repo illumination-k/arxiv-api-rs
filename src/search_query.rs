@@ -154,17 +154,21 @@ impl SearchRange {
     }
 }
 
+/// Format used by the arXiv API for date range queries: YYYYMMDDHHMM
+const ARXIV_DATE_FORMAT: &[time::format_description::BorrowedFormatItem<'_>] =
+    format_description!("[year][month][day][hour][minute]");
+
 impl ISearchQuery for SearchRange {
     fn to_query_string(&self) -> String {
         format!(
             "{}:[{} TO {}]",
             self.field.as_ref(),
             self.start
-                .format(&Iso8601::DEFAULT)
-                .expect("invalid start offset datetime"), // 1970-01-01T00:00:00Z
+                .format(ARXIV_DATE_FORMAT)
+                .expect("invalid start offset datetime"),
             self.end
-                .format(&Iso8601::DEFAULT)
-                .expect("invalid end offset datetime"), // 1970-01-01T00:16:40Z
+                .format(ARXIV_DATE_FORMAT)
+                .expect("invalid end offset datetime"),
         )
     }
 }
@@ -294,11 +298,11 @@ mod test {
         let range = SearchRange::new(RangeField::LastUpdatedDate, start, end);
         assert_eq!(
             range.to_query_string(),
-            "lastUpdatedDate:[1970-01-01T00:00:00.000000000Z TO 1970-01-01T00:16:40.000000000Z]"
+            "lastUpdatedDate:[197001010000 TO 197001010016]"
         );
         assert_eq!(
             range.to_string(),
-            "lastUpdatedDate:[1970-01-01T00:00:00.000000000Z TO 1970-01-01T00:16:40.000000000Z]"
+            "lastUpdatedDate:[197001010000 TO 197001010016]"
         );
     }
 

@@ -4,7 +4,7 @@ mod query;
 mod search_query;
 
 pub use error::{ArxivError, Result};
-pub use models::{ArxivResult, Link, SearchResponse};
+pub use models::{ArxivAuthor, ArxivResult, Link, SearchResponse};
 pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
 
@@ -15,7 +15,7 @@ const BASE_URL: &str = "https://export.arxiv.org/api/query";
 #[derive(Debug, Clone)]
 pub struct ArxivClient {
     client: reqwest::Client,
-    interval: std::time::Duration,
+    initial_interval: std::time::Duration,
     n_retries: usize,
 }
 
@@ -23,17 +23,19 @@ impl Default for ArxivClient {
     fn default() -> Self {
         Self {
             client: reqwest::Client::new(),
-            interval: std::time::Duration::from_secs(3),
+            initial_interval: std::time::Duration::from_secs(3),
             n_retries: 3,
         }
     }
 }
 
 impl ArxivClient {
+    /// Create a new client. `interval` is the base delay before the first retry;
+    /// subsequent retries use exponential backoff (interval * 2^(attempt-1)).
     pub fn new(interval: std::time::Duration, n_retries: usize) -> Self {
         Self {
             client: reqwest::Client::new(),
-            interval,
+            initial_interval: interval,
             n_retries,
         }
     }
@@ -52,7 +54,9 @@ impl ArxivClient {
                 Err(e) => {
                     warn!(attempt, error = %e, "Request failed");
                     errors.push(e);
-                    tokio::time::sleep(self.interval).await;
+                    let backoff = self.initial_interval * 2u32.saturating_pow(attempt as u32 - 1);
+                    debug!(?backoff, "Waiting before retry");
+                    tokio::time::sleep(backoff).await;
                     continue;
                 }
             };
@@ -118,6 +122,7 @@ mod test {
 
         let result = &response.results[0];
         assert_eq!(result.id, "http://arxiv.org/abs/2402.16893v1");
+        assert_eq!(result.arxiv_id, "2402.16893v1");
         assert!(result
             .title
             .contains("Exploring Privacy Issues in Retrieval-Augmented"));

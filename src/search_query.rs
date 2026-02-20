@@ -42,6 +42,7 @@ pub enum SearchField {
     JournalReference,
     SubjectCategory,
     ReportNumber,
+    Id,
     Doi,
     All,
 }
@@ -56,6 +57,7 @@ impl AsRef<str> for SearchField {
             SearchField::JournalReference => "jr",
             SearchField::SubjectCategory => "cat",
             SearchField::ReportNumber => "rn",
+            SearchField::Id => "id",
             SearchField::Doi => "doi",
             SearchField::All => "all",
         }
@@ -190,6 +192,15 @@ impl SearchTerm {
         Self {
             field,
             term: term.to_string(),
+        }
+    }
+
+    /// Create a search term that performs an exact phrase match by wrapping
+    /// the term in double quotes (e.g. `ti:"machine learning"`).
+    pub fn phrase<S: ToString>(field: SearchField, term: S) -> Self {
+        Self {
+            field,
+            term: format!("\"{}\"", term.to_string()),
         }
     }
 }
@@ -330,5 +341,18 @@ mod test {
             or_predicate.to_string(),
             "(ti:RAG AND au:John Doe) OR abs:Lorem Ipsum"
         );
+    }
+
+    #[test]
+    fn test_search_field_id() {
+        let term = SearchTerm::new(SearchField::Id, "2402.16893");
+        assert_eq!(term.to_query_string(), "id:2402.16893");
+    }
+
+    #[test]
+    fn test_phrase_search() {
+        let term = SearchTerm::phrase(SearchField::Title, "machine learning");
+        assert_eq!(term.to_query_string(), "ti:\"machine learning\"");
+        assert_eq!(term.to_string(), "ti:\"machine learning\"");
     }
 }

@@ -60,6 +60,15 @@ impl Entry {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Author {
     name: String,
+    #[serde(rename = "affiliation", default)]
+    affiliation: Option<String>,
+}
+
+/// A public author type that includes name and optional affiliation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArxivAuthor {
+    pub name: String,
+    pub affiliation: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -84,10 +93,13 @@ pub struct Category {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArxivResult {
+    /// Full arXiv entry URL (e.g. `http://arxiv.org/abs/2402.16893v1`).
     pub id: String,
+    /// Clean arXiv identifier without the URL prefix (e.g. `2402.16893v1`).
+    pub arxiv_id: String,
     pub title: String,
     pub summary: String,
-    pub authors: Vec<String>,
+    pub authors: Vec<ArxivAuthor>,
 
     pub doi: Option<String>,
     pub comment: Option<String>,
@@ -134,17 +146,32 @@ impl SearchResponse {
     }
 }
 
+/// Extract the clean arXiv ID from a full entry URL.
+///
+/// For example, `http://arxiv.org/abs/2402.16893v1` becomes `2402.16893v1`.
+fn extract_arxiv_id(id_url: &str) -> String {
+    id_url
+        .rsplit_once("/abs/")
+        .map(|(_, id)| id.to_string())
+        .unwrap_or_else(|| id_url.to_string())
+}
+
 impl ArxivResult {
     pub(crate) fn from_entry(entry: Entry) -> Self {
         let pdf_url = entry.get_pdf_url();
+        let arxiv_id = extract_arxiv_id(&entry.id);
         Self {
             id: entry.id,
+            arxiv_id,
             title: entry.title,
             summary: entry.summary,
             authors: entry
                 .authors
                 .into_iter()
-                .map(|author| author.name)
+                .map(|author| ArxivAuthor {
+                    name: author.name,
+                    affiliation: author.affiliation,
+                })
                 .collect(),
             doi: entry.doi,
             comment: entry.comment,
@@ -199,11 +226,16 @@ mod test {
 
         let result = &resp.results[0];
         assert_eq!(result.id, "http://arxiv.org/abs/2402.16893v1");
+        assert_eq!(result.arxiv_id, "2402.16893v1");
         assert!(result.title.starts_with("The Good and The Bad"));
         assert_eq!(result.primary_category, "cs.CR");
         assert!(result.pdf_url.is_some());
         assert!(!result.links.is_empty());
         assert!(result.links.iter().any(|l| l.rel == "alternate"));
+
+        // Authors should be parsed as ArxivAuthor structs
+        assert!(!result.authors.is_empty());
+        assert_eq!(result.authors[0].name, "Shenglai Zeng");
     }
 
     #[test]
@@ -237,5 +269,32 @@ mod test {
         for result in &resp.results {
             assert!(!result.categories.is_empty());
         }
+    }
+
+    #[test]
+    fn test_extract_arxiv_id() {
+        assert_eq!(
+            extract_arxiv_id("http://arxiv.org/abs/2402.16893v1"),
+            "2402.16893v1"
+        );
+        assert_eq!(
+            extract_arxiv_id("https://arxiv.org/abs/hep-th/9901001v1"),
+            "hep-th/9901001v1"
+        );
+        // Fallback: if there is no /abs/ segment, return as-is
+        assert_eq!(extract_arxiv_id("some-plain-id"), "some-plain-id");
+    }
+
+    #[test]
+    fn test_parse_affiliation() {
+        let resp = parse_fixture("search_with_affiliation.xml");
+        assert_eq!(resp.results.len(), 1);
+
+        let result = &resp.results[0];
+        assert_eq!(result.authors.len(), 2);
+        assert_eq!(result.authors[0].name, "Jane Doe");
+        assert_eq!(result.authors[0].affiliation.as_deref(), Some("MIT"));
+        assert_eq!(result.authors[1].name, "John Smith");
+        assert!(result.authors[1].affiliation.is_none());
     }
 }

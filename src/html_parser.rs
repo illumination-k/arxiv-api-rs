@@ -35,12 +35,27 @@ pub enum ContentBlock {
     Equation(String),
 }
 
-/// A bibliography entry.
+/// A bibliography entry with optional structured fields.
+///
+/// The `text` field always contains the full raw text of the reference.
+/// The structured fields (`authors`, `year`, `title`, `journal`) are
+/// best-effort extractions from the individual `ltx_bibblock` spans.
 #[derive(Debug, Clone)]
 pub struct Reference {
+    /// The HTML `id` attribute of the `<li>` element (e.g. `"bib.bib1"`).
     pub id: String,
+    /// The citation label shown in the text (e.g. `"Smith (2024)"`).
     pub label: String,
+    /// Full concatenated text of all bibblocks.
     pub text: String,
+    /// Author names extracted from the first bibblock.
+    pub authors: Vec<String>,
+    /// Publication year extracted from the first bibblock.
+    pub year: Option<u16>,
+    /// Paper title extracted from the second bibblock.
+    pub title: Option<String>,
+    /// Journal or venue name, often from an italic span in the bibblocks.
+    pub journal: Option<String>,
 }
 
 impl ArxivPaper {
@@ -61,6 +76,11 @@ impl ArxivPaper {
             sections,
             references,
         }
+    }
+
+    /// Return a reference to the parsed bibliography entries.
+    pub fn citations(&self) -> &[Reference] {
+        &self.references
     }
 
     /// Convert the parsed paper to Markdown.
@@ -379,14 +399,90 @@ fn extract_references(document: &Html) -> Vec<Reference> {
                 .unwrap_or_default();
 
             let block_sel = Selector::parse(".ltx_bibblock").unwrap();
-            let text = item
+            let blocks: Vec<String> = item
                 .select(&block_sel)
                 .map(|b| clean_text(&b.text().collect::<String>()))
-                .collect::<Vec<_>>()
-                .join(" ");
+                .collect();
 
-            Reference { id, label, text }
+            let text = blocks.join(" ");
+
+            // Parse structured fields from bibblocks.
+            // Typical pattern:
+            //   block 0: "Author Name(s). Year."
+            //   block 1: "Paper title."
+            //   block 2: "Journal/Venue." (often italic)
+            let (authors, year) = blocks
+                .first()
+                .map(|b| parse_authors_year(b))
+                .unwrap_or_default();
+
+            let title = blocks.get(1).map(|b| b.trim_end_matches('.').to_string());
+
+            // Look for journal: check for italic text in the bibitem, fall back to block 2.
+            let em_sel = Selector::parse("em.ltx_emph").unwrap();
+            let journal = item
+                .select(&em_sel)
+                .next()
+                .map(|e| clean_text(&e.text().collect::<String>()))
+                .map(|s| s.trim_end_matches('.').to_string())
+                .or_else(|| blocks.get(2).map(|b| b.trim_end_matches('.').to_string()));
+
+            Reference {
+                id,
+                label,
+                text,
+                authors,
+                year,
+                title,
+                journal,
+            }
         })
+        .collect()
+}
+
+/// Parse "Author1, Author2, and Author3. 2024." into (authors, year).
+fn parse_authors_year(block: &str) -> (Vec<String>, Option<u16>) {
+    // Try to split on the last ". " followed by a 4-digit year.
+    let year_re_pos = block
+        .char_indices()
+        .collect::<Vec<_>>()
+        .windows(4)
+        .find_map(|w| {
+            let s: String = w.iter().map(|(_, c)| c).collect();
+            if s.chars().all(|c| c.is_ascii_digit()) {
+                Some(w[0].0)
+            } else {
+                None
+            }
+        });
+
+    let (author_part, year) = match year_re_pos {
+        Some(pos) => {
+            let year_str = &block[pos..pos + 4];
+            let year = year_str.parse::<u16>().ok();
+            let author_part = block[..pos].trim().trim_end_matches('.');
+            (author_part, year)
+        }
+        None => (block.trim_end_matches('.').trim(), None),
+    };
+
+    let authors = split_authors(author_part);
+    (authors, year)
+}
+
+/// Split an author string like "Alice Smith, Bob Jones, and Charlie Brown" into individual names.
+fn split_authors(s: &str) -> Vec<String> {
+    let s = s.trim().trim_end_matches('.');
+    if s.is_empty() {
+        return Vec::new();
+    }
+
+    // Replace " and " with comma, then split on commas.
+    let normalized = s.replace(" and ", ", ");
+    normalized
+        .split(',')
+        .map(|a| a.trim().to_string())
+        .filter(|a| !a.is_empty())
         .collect()
 }
 
@@ -475,11 +571,28 @@ mod test {
         let paper = ArxivPaper::parse(&load_fixture());
         assert_eq!(paper.references.len(), 2);
 
-        assert_eq!(paper.references[0].id, "bib.bib1");
-        assert_eq!(paper.references[0].label, "Smith (2024)");
-        assert!(paper.references[0].text.contains("A great paper"));
+        let ref0 = &paper.references[0];
+        assert_eq!(ref0.id, "bib.bib1");
+        assert_eq!(ref0.label, "Smith (2024)");
+        assert!(ref0.text.contains("A great paper"));
+        assert_eq!(ref0.authors, vec!["Alice Smith"]);
+        assert_eq!(ref0.year, Some(2024));
+        assert_eq!(ref0.title.as_deref(), Some("A great paper"));
+        assert_eq!(ref0.journal.as_deref(), Some("Journal of Testing"));
 
-        assert_eq!(paper.references[1].label, "Jones (2023)");
+        let ref1 = &paper.references[1];
+        assert_eq!(ref1.label, "Jones (2023)");
+        assert_eq!(ref1.authors, vec!["Bob Jones"]);
+        assert_eq!(ref1.year, Some(2023));
+        assert_eq!(ref1.title.as_deref(), Some("Another paper"));
+    }
+
+    #[test]
+    fn test_citations_accessor() {
+        let paper = ArxivPaper::parse(&load_fixture());
+        let citations = paper.citations();
+        assert_eq!(citations.len(), 2);
+        assert_eq!(citations[0].label, "Smith (2024)");
     }
 
     #[test]

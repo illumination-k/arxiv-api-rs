@@ -144,6 +144,16 @@ impl ArxivClient {
             errors,
         })
     }
+
+    /// Fetch the bibliography (citations) of an arXiv paper from its HTML version.
+    ///
+    /// This is a convenience wrapper around [`fetch_html`](Self::fetch_html) that
+    /// returns only the parsed reference list.
+    #[cfg(feature = "html")]
+    pub async fn fetch_citations(&self, arxiv_id: &str) -> Result<Vec<html_parser::Reference>> {
+        let paper = self.fetch_html(arxiv_id).await?;
+        Ok(paper.references)
+    }
 }
 
 #[cfg(test)]

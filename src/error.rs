@@ -38,6 +38,10 @@ pub enum ArxivError {
         source: time::error::Parse,
         input: String,
     },
+
+    /// The arXiv HTML page was not available for the given paper.
+    #[error("HTML version not available for paper: {arxiv_id}")]
+    HtmlNotAvailable { arxiv_id: String },
 }
 
 impl ArxivError {

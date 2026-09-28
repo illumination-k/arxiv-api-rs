@@ -1,6 +1,9 @@
 use arxiv_api_rs::{ArxivClient, ArxivQuery, ArxivResult, SortBy, SortOrder};
 use rmcp::{
-    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    handler::server::{
+        router::tool::ToolRouter,
+        wrapper::{Json, Parameters},
+    },
     model::{Implementation, ServerCapabilities, ServerConfig},
     tool, tool_handler, tool_router, ServerHandler,
 };
@@ -73,15 +76,20 @@ pub struct GetPaperContentParams {
 }
 
 /// Compact paper representation returned to MCP clients.
-#[derive(Debug, Serialize)]
-struct PaperSummary {
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct PaperSummary {
+    /// arXiv identifier including version, e.g. `2402.16893v1`.
     arxiv_id: String,
     title: String,
+    /// Author names.
     authors: Vec<String>,
+    /// Abstract.
     summary: String,
     primary_category: String,
     categories: Vec<String>,
+    /// Date of the first version (`YYYY-MM-DD`).
     published: String,
+    /// Date of the latest version (`YYYY-MM-DD`).
     updated: String,
     pdf_url: Option<String>,
     doi: Option<String>,
@@ -109,20 +117,24 @@ impl From<ArxivResult> for PaperSummary {
     }
 }
 
-#[derive(Debug, Serialize)]
-struct SearchOutput {
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct SearchOutput {
+    /// Total number of papers matching the query.
     total_results: usize,
+    /// Offset of the first returned paper.
     start_index: usize,
+    /// Number of papers in `papers`.
     returned: usize,
+    papers: Vec<PaperSummary>,
+}
+
+#[derive(Debug, Serialize, JsonSchema)]
+pub struct GetPapersOutput {
     papers: Vec<PaperSummary>,
 }
 
 fn normalize_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-fn to_json<T: Serialize>(value: &T) -> Result<String, String> {
-    serde_json::to_string_pretty(value).map_err(|e| format!("failed to serialize result: {e}"))
 }
 
 #[derive(Debug, Clone)]
@@ -146,21 +158,21 @@ impl ArxivServer {
         }
     }
 
-    /// Search arXiv papers and return their metadata (title, authors, abstract, categories, dates, PDF URL) as JSON.
+    /// Search arXiv papers and return their metadata (title, authors, abstract, categories, dates, PDF URL).
     #[tool]
     async fn search_papers(
         &self,
         Parameters(params): Parameters<SearchPapersParams>,
-    ) -> Result<String, String> {
+    ) -> Result<Json<SearchOutput>, String> {
         let query = build_search_query(&params)?;
         let response = self.client.search(query).await.map_err(|e| e.to_string())?;
         let papers: Vec<PaperSummary> = response.results.into_iter().map(Into::into).collect();
-        to_json(&SearchOutput {
+        Ok(Json(SearchOutput {
             total_results: response.total_results,
             start_index: response.start_index,
             returned: papers.len(),
             papers,
-        })
+        }))
     }
 
     /// Fetch metadata for specific arXiv papers by their identifiers.
@@ -168,7 +180,7 @@ impl ArxivServer {
     async fn get_papers(
         &self,
         Parameters(params): Parameters<GetPapersParams>,
-    ) -> Result<String, String> {
+    ) -> Result<Json<GetPapersOutput>, String> {
         if params.ids.is_empty() {
             return Err("`ids` must contain at least one arXiv identifier".to_string());
         }
@@ -178,7 +190,7 @@ impl ArxivServer {
             .with_max_results(n);
         let response = self.client.search(query).await.map_err(|e| e.to_string())?;
         let papers: Vec<PaperSummary> = response.results.into_iter().map(Into::into).collect();
-        to_json(&papers)
+        Ok(Json(GetPapersOutput { papers }))
     }
 
     /// Fetch the full text of an arXiv paper (from its HTML version) converted to Markdown.
@@ -266,6 +278,22 @@ mod test {
             .collect();
         names.sort();
         assert_eq!(names, ["get_paper_content", "get_papers", "search_papers"]);
+    }
+
+    #[test]
+    fn test_output_schemas() {
+        let server = ArxivServer::default();
+        let has_schema = |name: &str| {
+            server
+                .tool_router
+                .get(name)
+                .unwrap()
+                .output_schema
+                .is_some()
+        };
+        assert!(has_schema("search_papers"));
+        assert!(has_schema("get_papers"));
+        assert!(!has_schema("get_paper_content"));
     }
 
     #[test]

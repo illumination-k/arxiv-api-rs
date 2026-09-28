@@ -39,6 +39,10 @@ pub enum ArxivError {
         input: String,
     },
 
+    /// Failed to build the underlying HTTP client.
+    #[error("failed to build HTTP client")]
+    ClientBuild(#[source] reqwest::Error),
+
     /// The arXiv HTML page was not available for the given paper.
     #[error("HTML version not available for paper: {arxiv_id}")]
     HtmlNotAvailable { arxiv_id: String },

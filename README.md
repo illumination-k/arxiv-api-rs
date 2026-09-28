@@ -39,4 +39,21 @@ Or in an MCP client config:
 }
 ```
 
+### HTTP mode (Streamable HTTP)
+
+By default the server speaks MCP over stdio. Pass `--http` to serve Streamable HTTP at `/mcp` instead:
+
+```bash
+# Loopback only (default allowed hosts: localhost, 127.0.0.1, ::1)
+arxiv-mcp --http 127.0.0.1:8080
+
+# Public deployment: restrict accepted Host / Origin headers
+arxiv-mcp --http 0.0.0.0:8080 \
+  --allowed-host mcp.example.com \
+  --allowed-origin https://app.example.com:443
+```
+
+- `--allowed-host` (repeatable): allowed `Host` header values (`host` or `host:port`). Requests with other hosts get `403` (DNS rebinding protection).
+- `--allowed-origin` (repeatable): allowed `Origin` header values; `:*` matches any port. Origin validation is disabled when omitted.
+
 Logs are written to stderr; set `RUST_LOG=debug` for verbose output.

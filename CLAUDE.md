@@ -5,14 +5,14 @@
 Cargo workspace for the arXiv.org API:
 
 - `crates/arxiv-api-rs` — Rust library for querying the arXiv.org API. It provides an async HTTP client, a builder-pattern query API, a search DSL with boolean logic and date ranges, and typed data models for arXiv paper results.
-- `crates/arxiv-mcp` — MCP server binary (stdio transport, built on `rmcp`) that exposes the library as tools: `search_papers`, `get_papers`, `get_paper_content`.
+- `crates/arxiv-mcp` — MCP server binary (stdio by default, or Streamable HTTP via `--http` with `--allowed-host`/`--allowed-origin` allowlists; built on `rmcp` + `axum`) that exposes the library as tools: `search_papers`, `get_papers`, `get_paper_content`.
 
 ## Repository Structure
 
 ```
 Cargo.toml                # Workspace manifest
 crates/arxiv-mcp/src/
-├── main.rs               # stdio entry point (logs to stderr)
+├── main.rs               # CLI (clap), stdio / HTTP transports (logs to stderr)
 └── server.rs             # ArxivServer: rmcp tool router and tool implementations
 crates/arxiv-api-rs/
 ├── tests/fixtures/       # XML/HTML fixtures used by unit tests

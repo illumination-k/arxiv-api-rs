@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<article class="ltx_document">
+<h1 class="ltx_title ltx_title_document">Image Grid Test Paper</h1>
+<section class="ltx_section" id="S1">
+  <h2 class="ltx_title ltx_title_section"><span class="ltx_tag ltx_tag_section">1 </span>Grids</h2>
+  <!-- \begin{tabular} of \includegraphics inside a figure (layout grid, not a table) -->
+  <figure id="S1.F1" class="ltx_figure">
+  <table id="S1.F1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center">Input</td>
+  <td class="ltx_td ltx_align_center"><img src="2304.00001v1/grid/a1.jpg" class="ltx_graphics ltx_img_square" width="64" height="64" alt="[Uncaptioned image]"></td>
+  <td class="ltx_td ltx_align_center"><img src="2304.00001v1/grid/a2.jpg" class="ltx_graphics ltx_img_square" width="64" height="64" alt="[Uncaptioned image]"></td></tr>
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center">Output</td>
+  <td class="ltx_td ltx_align_center"><img src="2304.00001v1/grid/b1.jpg" class="ltx_graphics ltx_img_square" width="64" height="64" alt="[Uncaptioned image]"></td>
+  <td class="ltx_td ltx_align_center"><img src="2304.00001v1/grid/b2.jpg" class="ltx_graphics ltx_img_square" width="64" height="64" alt="[Uncaptioned image]"></td></tr>
+  </table>
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Qualitative results.</figcaption>
+  </figure>
+  <!-- Sub-figure whose images sit in a span-based tabular inside a scaled block -->
+  <figure id="S1.F2" class="ltx_figure">
+  <div class="ltx_flex_figure">
+  <div class="ltx_flex_cell ltx_flex_size_1">
+  <figure id="S1.F2.sf1" class="ltx_figure ltx_figure_panel">
+  <div class="ltx_inline-block ltx_transformed_outer"><span class="ltx_transformed_inner">
+  <p class="ltx_p"><span class="ltx_text"><span class="ltx_tabular ltx_align_middle">
+  <span class="ltx_tr"><span class="ltx_td"><img src="2304.00001v1/masks/m1.jpg" class="ltx_graphics" alt="[Uncaptioned image]"></span><span class="ltx_td"><img src="2304.00001v1/masks/m2.jpg" class="ltx_graphics" alt="[Uncaptioned image]"></span></span>
+  </span></span></p>
+  </span></div>
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">(a) </span>Masks</figcaption>
+  </figure>
+  </div>
+  </div>
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>Mask examples.</figcaption>
+  </figure>
+  <!-- A real table that happens to contain an icon: stays a table -->
+  <figure id="S1.T1" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 1: </span>Model zoo.</figcaption>
+  <table class="ltx_tabular ltx_align_middle">
+  <thead class="ltx_thead"><tr class="ltx_tr"><th class="ltx_td ltx_th ltx_th_column">Model</th><th class="ltx_td ltx_th ltx_th_column">Logo</th></tr></thead>
+  <tbody class="ltx_tbody"><tr class="ltx_tr"><td class="ltx_td">SAM</td><td class="ltx_td"><img src="2304.00001v1/icon.png" class="ltx_graphics" alt="icon"></td></tr></tbody>
+  </table>
+  </figure>
+  <!-- A TikZ picture with an embedded image in a foreignObject -->
+  <figure id="S1.F3" class="ltx_figure">
+  <svg class="ltx_picture" width="100" height="50"><g><foreignObject width="100" height="50"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><img src="2304.00001v1/tikz_inner.png" class="ltx_graphics" alt="Refer to caption"></span></span></foreignObject></g></svg>
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>Image inside TikZ.</figcaption>
+  </figure>
+</section>
+</article>
+</body>
+</html>

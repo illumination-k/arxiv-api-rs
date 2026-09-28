@@ -101,8 +101,10 @@ impl ArxivClient {
             return Err(http_status_error(response).await);
         }
 
+        let page_url = response.url().clone();
         let text = response.text().await.map_err(ArxivError::ResponseBody)?;
-        let paper = crate::html_parser::ArxivPaper::parse(&text);
+        let mut paper = crate::html_parser::ArxivPaper::parse(&text);
+        paper.resolve_image_urls(&page_url);
         debug!(
             sections = paper.sections.len(),
             references = paper.references.len(),

@@ -20,6 +20,7 @@ crates/arxiv-api-rs/
     ├── lib.rs            # Library entry point, re-exports, network integration tests
     ├── client.rs         # ArxivClient + ArxivClientBuilder (User-Agent, timeout, shared rate limiter, retries)
     ├── error.rs          # ArxivError enum (thiserror), Result type alias
+    ├── html_parser.rs    # (feature "html") arXiv HTML (LaTeXML) parser: sections, figures, tables, equations, Markdown
     ├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
     ├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
     └── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
@@ -37,7 +38,7 @@ crates/arxiv-api-rs/
 cargo build
 
 # Run all tests across the workspace (includes integration tests that make real HTTP requests to arXiv)
-cargo test
+cargo test --workspace --all-features
 
 # Check formatting (CI uses this)
 cargo fmt --check
@@ -46,7 +47,7 @@ cargo fmt --check
 cargo fmt
 
 # Lint with clippy (CI treats warnings as errors)
-cargo clippy --workspace --all-targets -- --deny warnings
+cargo clippy --workspace --all-features --all-targets -- --deny warnings
 
 # Check dprint formatting (JSON, Markdown, TOML, YAML)
 dprint check
@@ -61,7 +62,7 @@ Defined in `.github/workflows/ci.yaml`. Triggers on pushes to `main` and all PRs
 
 1. **actionlint** — Lints the CI workflow file itself.
 2. **dprint** — Checks formatting of JSON, Markdown, TOML, and YAML files via `dprint check`.
-3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- --deny warnings`, and `cargo test --workspace`.
+3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy --workspace --all-features --all-targets -- --deny warnings`, and `cargo test --workspace --all-features`.
 
 All three jobs must pass. Clippy warnings are treated as errors (`--deny warnings`).
 
@@ -73,6 +74,7 @@ Tests are inline (`#[cfg(test)]` modules) in each source file:
 - `client.rs` — offline unit tests for retry/status handling, User-Agent, and the rate limiter (mock HTTP server, `tokio::time::pause`).
 - `query.rs` — 3 sync unit tests for query builder and URL parameter construction.
 - `search_query.rs` — 4 sync unit tests for search term formatting, date range formatting, and predicate composition.
+- `html_parser.rs` — sync unit tests (feature `html`) over HTML fixtures in `tests/fixtures/` (`sample_paper.html` and `html_*.html`: figures, tables, image grids, floats outside sections, text-only floats, inline content) modeled on real LaTeXML output.
 
 Run all tests with `cargo test`. There is no separate integration test directory.
 

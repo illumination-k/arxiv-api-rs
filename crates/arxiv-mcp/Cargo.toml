@@ -1,0 +1,16 @@
+[package]
+name = "arxiv-mcp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.104"
+arxiv-api-rs = { version = "0.1.0", path = "../arxiv-api-rs", features = ["html"] }
+rmcp = { version = "3.5.0", features = ["server", "transport-io", "macros"] }
+schemars = "1.2.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+time = "0.3.55"
+tokio = { version = "1.53.1", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

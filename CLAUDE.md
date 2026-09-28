@@ -2,17 +2,26 @@
 
 ## Project Overview
 
-`arxiv-api-rs` is a Rust library for querying the arXiv.org API. It provides an async HTTP client, a builder-pattern query API, a search DSL with boolean logic and date ranges, and typed data models for arXiv paper results.
+Cargo workspace for the arXiv.org API:
+
+- `crates/arxiv-api-rs` — Rust library for querying the arXiv.org API. It provides an async HTTP client, a builder-pattern query API, a search DSL with boolean logic and date ranges, and typed data models for arXiv paper results.
+- `crates/arxiv-mcp` — MCP server binary (stdio transport, built on `rmcp`) that exposes the library as tools: `search_papers`, `get_papers`, `get_paper_content`.
 
 ## Repository Structure
 
 ```
-src/
-├── lib.rs            # Library entry point, ArxivClient (HTTP client with retries), re-exports
-├── error.rs          # ArxivError enum (thiserror), Result type alias
-├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
-├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
-└── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
+Cargo.toml                # Workspace manifest
+crates/arxiv-mcp/src/
+├── main.rs               # stdio entry point (logs to stderr)
+└── server.rs             # ArxivServer: rmcp tool router and tool implementations
+crates/arxiv-api-rs/
+├── tests/fixtures/       # XML/HTML fixtures used by unit tests
+└── src/
+    ├── lib.rs            # Library entry point, ArxivClient (HTTP client with retries), re-exports
+    ├── error.rs          # ArxivError enum (thiserror), Result type alias
+    ├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
+    ├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
+    └── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
 ```
 
 - `lib.rs` — `ArxivClient` struct with configurable retries and interval. `search()` method makes async HTTP requests to arXiv, parses XML, and returns `Vec<ArxivResult>`.
@@ -26,7 +35,7 @@ src/
 # Build the project
 cargo build
 
-# Run all tests (includes integration tests that make real HTTP requests to arXiv)
+# Run all tests across the workspace (includes integration tests that make real HTTP requests to arXiv)
 cargo test
 
 # Check formatting (CI uses this)
@@ -36,7 +45,7 @@ cargo fmt --check
 cargo fmt
 
 # Lint with clippy (CI treats warnings as errors)
-cargo clippy -- --deny warnings
+cargo clippy --workspace --all-targets -- --deny warnings
 
 # Check dprint formatting (JSON, Markdown, TOML, YAML)
 dprint check
@@ -51,7 +60,7 @@ Defined in `.github/workflows/ci.yaml`. Triggers on pushes to `main` and all PRs
 
 1. **actionlint** — Lints the CI workflow file itself.
 2. **dprint** — Checks formatting of JSON, Markdown, TOML, and YAML files via `dprint check`.
-3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy -- --deny warnings`, and `cargo test`.
+3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy --workspace --all-targets -- --deny warnings`, and `cargo test --workspace`.
 
 All three jobs must pass. Clippy warnings are treated as errors (`--deny warnings`).
 
@@ -79,18 +88,18 @@ Run all tests with `cargo test`. There is no separate integration test directory
 
 ## Dependencies
 
-| Crate | Purpose |
-|-------|---------|
-| `thiserror` | Derive macro for custom error types |
-| `quick-xml` | XML parsing (with `serialize`, `overlapped-lists` features) |
-| `reqwest` | HTTP client |
-| `serde` | Serialization/deserialization (with `derive`) |
-| `serde_with` | DateTime serde support (with `time_0_3`) |
-| `time` | DateTime types and formatting |
-| `tokio` | Async runtime |
-| `tracing` | Structured logging |
-| `url` | URL construction |
-| `maplit` (dev) | HashMap literal macros for tests |
+| Crate          | Purpose                                                     |
+| -------------- | ----------------------------------------------------------- |
+| `thiserror`    | Derive macro for custom error types                         |
+| `quick-xml`    | XML parsing (with `serialize`, `overlapped-lists` features) |
+| `reqwest`      | HTTP client                                                 |
+| `serde`        | Serialization/deserialization (with `derive`)               |
+| `serde_with`   | DateTime serde support (with `time_0_3`)                    |
+| `time`         | DateTime types and formatting                               |
+| `tokio`        | Async runtime                                               |
+| `tracing`      | Structured logging                                          |
+| `url`          | URL construction                                            |
+| `maplit` (dev) | HashMap literal macros for tests                            |
 
 ## Formatting
 

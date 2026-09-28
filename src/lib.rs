@@ -7,7 +7,9 @@ mod search_query;
 
 pub use error::{ArxivError, Result};
 #[cfg(feature = "html")]
-pub use html_parser::{ArxivPaper, ContentBlock, Reference, Section};
+pub use html_parser::{
+    ArxivPaper, ContentBlock, Figure, Image, Reference, Section, Table, TableCell, TableRow,
+};
 pub use models::{ArxivAuthor, ArxivResult, Link, SearchResponse};
 pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
@@ -129,8 +131,10 @@ impl ArxivClient {
                 });
             }
 
+            let page_url = response.url().clone();
             let text = response.text().await.map_err(ArxivError::ResponseBody)?;
-            let paper = html_parser::ArxivPaper::parse(&text);
+            let mut paper = html_parser::ArxivPaper::parse(&text);
+            paper.resolve_image_urls(&page_url);
             debug!(
                 sections = paper.sections.len(),
                 references = paper.references.len(),

@@ -10,6 +10,7 @@
 src/
 ├── lib.rs            # Library entry point, ArxivClient (HTTP client with retries), re-exports
 ├── error.rs          # ArxivError enum (thiserror), Result type alias
+├── html_parser.rs    # (feature "html") arXiv HTML (LaTeXML) parser: sections, figures, tables, equations, Markdown
 ├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
 ├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
 └── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
@@ -27,7 +28,7 @@ src/
 cargo build
 
 # Run all tests (includes integration tests that make real HTTP requests to arXiv)
-cargo test
+cargo test --all-features
 
 # Check formatting (CI uses this)
 cargo fmt --check
@@ -36,7 +37,7 @@ cargo fmt --check
 cargo fmt
 
 # Lint with clippy (CI treats warnings as errors)
-cargo clippy -- --deny warnings
+cargo clippy --all-features --all-targets -- --deny warnings
 
 # Check dprint formatting (JSON, Markdown, TOML, YAML)
 dprint check
@@ -51,7 +52,7 @@ Defined in `.github/workflows/ci.yaml`. Triggers on pushes to `main` and all PRs
 
 1. **actionlint** — Lints the CI workflow file itself.
 2. **dprint** — Checks formatting of JSON, Markdown, TOML, and YAML files via `dprint check`.
-3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy -- --deny warnings`, and `cargo test`.
+3. **lint_and_test** — Runs `cargo fmt --check`, `cargo clippy --all-features --all-targets -- --deny warnings`, and `cargo test --all-features`.
 
 All three jobs must pass. Clippy warnings are treated as errors (`--deny warnings`).
 
@@ -62,6 +63,7 @@ Tests are inline (`#[cfg(test)]` modules) in each source file:
 - `lib.rs` — 5 async integration tests (`#[tokio::test]`) that make real HTTP requests to the arXiv API. These may be slow or flaky due to network dependency.
 - `query.rs` — 3 sync unit tests for query builder and URL parameter construction.
 - `search_query.rs` — 4 sync unit tests for search term formatting, date range formatting, and predicate composition.
+- `html_parser.rs` — sync unit tests (feature `html`) over HTML fixtures in `tests/fixtures/` (`sample_paper.html`, `html_figures.html`, `html_tables.html`, `html_structure.html`) modeled on real LaTeXML output.
 
 Run all tests with `cargo test`. There is no separate integration test directory.
 

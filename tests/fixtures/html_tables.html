@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<article class="ltx_document">
+<h1 class="ltx_title ltx_title_document">Table Test Paper</h1>
+<section class="ltx_section" id="S1">
+  <h2 class="ltx_title ltx_title_section"><span class="ltx_tag ltx_tag_section">1 </span>Tables</h2>
+  <!-- thead + a header continuation row in tbody + row headers + math cells -->
+  <figure id="S1.T1" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 1: </span>Complexity. <math class="ltx_Math" alttext="n" display="inline"><mi>n</mi></math> is the length.</figcaption>
+  <table id="S1.T1.2" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+  <thead class="ltx_thead">
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt">Layer Type</th>
+  <th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt">Complexity</th>
+  <th class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt">Sequential</th></tr>
+  </thead>
+  <tbody class="ltx_tbody">
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_th ltx_th_row"></th>
+  <th class="ltx_td ltx_th ltx_th_column"></th>
+  <th class="ltx_td ltx_align_center ltx_th ltx_th_column">Operations</th></tr>
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t"><span class="ltx_rule" style="width:0.0pt;height:8.6pt;display:inline-block;"></span>Self-Attention</th>
+  <td class="ltx_td ltx_align_center ltx_border_t"><math class="ltx_Math" alttext="O(n^{2}\cdot d)" display="inline"><semantics><mi>O</mi><annotation encoding="application/x-tex">O(n^{2}\cdot d)</annotation></semantics></math></td>
+  <td class="ltx_td ltx_align_center ltx_border_t"><math class="ltx_Math" alttext="O(1)" display="inline"><mi>O</mi></math></td></tr>
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_align_left ltx_th ltx_th_row">Recurrent</th>
+  <td class="ltx_td ltx_align_center"><math class="ltx_Math" alttext="O(n\cdot d^{2})" display="inline"><mi>O</mi></math></td>
+  <td class="ltx_td ltx_align_center"><math class="ltx_Math" alttext="O(n)" display="inline"><mi>O</mi></math></td></tr>
+  </tbody>
+  </table>
+  </figure>
+  <!-- rowspan / colspan, no thead, an empty spacer row -->
+  <figure id="S1.T2" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 2: </span>Spans.</figcaption>
+  <table id="S1.T2.1" class="ltx_tabular ltx_centering ltx_align_middle">
+  <tbody class="ltx_tbody">
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center" rowspan="2">Model</td>
+  <td class="ltx_td ltx_align_center" colspan="2">Score</td></tr>
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center">BLEU</td>
+  <td class="ltx_td ltx_align_center">PPL</td></tr>
+  <tr class="ltx_tr"><td class="ltx_td"></td><td class="ltx_td"></td><td class="ltx_td"></td></tr>
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center" rowspan="2">(A)</td>
+  <td class="ltx_td ltx_align_center">25.8</td>
+  <td class="ltx_td ltx_align_center">4.92</td></tr>
+  <tr class="ltx_tr">
+  <td class="ltx_td ltx_align_center">24.9</td>
+  <td class="ltx_td ltx_align_center">a|b</td></tr>
+  </tbody>
+  </table>
+  </figure>
+  <!-- Two sub-tables inside one float, wrapped in scaled inline blocks -->
+  <figure id="S1.T3" class="ltx_table">
+  <div class="ltx_flex_figure ltx_flex_table">
+  <div class="ltx_flex_cell ltx_flex_size_2">
+  <figure id="S1.T3.fig1" class="ltx_figure ltx_figure_panel ltx_minipage ltx_align_center">
+  <figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Table 3: </span>Left sub-table</figcaption>
+  <div class="ltx_inline-block ltx_align_center ltx_transformed_outer"><span class="ltx_transformed_inner">
+  <table id="S1.T3.fig1.1.1" class="ltx_tabular ltx_align_middle">
+  <tr class="ltx_tr"><td class="ltx_td">Threshold</td><td class="ltx_td">ROUGE-L</td></tr>
+  <tr class="ltx_tr"><td class="ltx_td">1</td><td class="ltx_td">0.36</td></tr>
+  </table>
+  </span></div>
+  </figure></div>
+  <div class="ltx_flex_cell ltx_flex_size_2">
+  <figure id="S1.T3.fig2" class="ltx_figure ltx_figure_panel ltx_minipage ltx_align_center">
+  <figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Table 4: </span>Right sub-table</figcaption>
+  <table id="S1.T3.fig2.1.1" class="ltx_tabular ltx_align_middle">
+  <tr class="ltx_tr"><td class="ltx_td">Threshold</td><td class="ltx_td">PPL</td></tr>
+  <tr class="ltx_tr"><td class="ltx_td">1</td><td class="ltx_td">1.5</td></tr>
+  </table>
+  </figure></div>
+  </div>
+  </figure>
+  <!-- Wrap-figure: a table inside class="ltx_figure", caption after the table -->
+  <figure id="S1.T5" class="ltx_figure ltx_figure_panel ltx_align_center ltx_align_floatright">
+  <table id="S1.T5.1" class="ltx_tabular ltx_centering ltx_figure_panel ltx_guessed_headers ltx_align_middle">
+  <thead class="ltx_thead">
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_th ltx_th_column ltx_th_row"><span class="ltx_text ltx_font_bold">Parameter</span></th>
+  <th class="ltx_td ltx_th ltx_th_column"><span class="ltx_text ltx_font_bold">Value</span></th></tr>
+  </thead>
+  <tbody class="ltx_tbody">
+  <tr class="ltx_tr">
+  <th class="ltx_td ltx_th ltx_th_row"><span class="ltx_text ltx_font_typewriter">dim</span></th>
+  <td class="ltx_td"><math class="ltx_Math" alttext="4096" display="inline"><mn>4096</mn></math></td></tr>
+  </tbody>
+  </table>
+  <br class="ltx_break ltx_break">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Table 5: </span><span class="ltx_text ltx_font_bold">Model architecture.</span></figcaption>
+  </figure>
+  <!-- Table rendered as an image -->
+  <figure id="S1.T6" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 6: </span>Screenshot table.</figcaption>
+  <img src="2401.00002v1/table6.png" class="ltx_graphics ltx_centering" width="300" height="120" alt="Refer to caption">
+  </figure>
+  <!-- span-based tabular (LaTeXML inline tabular) and a nested tabular in a cell -->
+  <figure id="S1.T7" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 7: </span>Span tabular.</figcaption>
+  <span id="S1.T7.1" class="ltx_tabular ltx_align_middle">
+  <span class="ltx_tr"><span class="ltx_td ltx_th ltx_th_column">Name</span><span class="ltx_td ltx_th ltx_th_column">Info</span></span>
+  <span class="ltx_tr"><span class="ltx_td">x</span><span class="ltx_td"><span class="ltx_tabular"><span class="ltx_tr"><span class="ltx_td">top</span></span><span class="ltx_tr"><span class="ltx_td">bottom</span></span></span></span></span>
+  </span>
+  </figure>
+</section>
+</article>
+</body>
+</html>

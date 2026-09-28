@@ -17,14 +17,15 @@ crates/arxiv-mcp/src/
 crates/arxiv-api-rs/
 ├── tests/fixtures/       # XML/HTML fixtures used by unit tests
 └── src/
-    ├── lib.rs            # Library entry point, ArxivClient (HTTP client with retries), re-exports
+    ├── lib.rs            # Library entry point, re-exports, network integration tests
+    ├── client.rs         # ArxivClient + ArxivClientBuilder (User-Agent, timeout, shared rate limiter, retries)
     ├── error.rs          # ArxivError enum (thiserror), Result type alias
     ├── models.rs         # Data models: Feed (XML root), Entry (internal), ArxivResult (public output)
     ├── query.rs          # ArxivQuery<S> builder, SortBy/SortOrder enums, URL construction
     └── search_query.rs   # Search DSL: SearchTerm, SearchRange, SearchPredicate, ISearchQuery trait
 ```
 
-- `lib.rs` — `ArxivClient` struct with configurable retries and interval. `search()` method makes async HTTP requests to arXiv, parses XML, and returns `Vec<ArxivResult>`.
+- `client.rs` — `ArxivClient` built via `ArxivClient::builder()` (defaults: descriptive User-Agent, 30s timeout, 3 attempts with exponential backoff, 3s minimum interval between requests shared by all clones). Retries network errors, 429, and 5xx (honors `Retry-After`). `search()` returns a `SearchResponse`; `fetch_html()` (feature `html`) returns `HtmlNotAvailable` on 404. Unit tests use a local mock TCP server and paused tokio time.
 - `models.rs` — Serde/quick-xml deserialization of arXiv Atom XML. Internal `Entry`/`Feed` types are converted to the public `ArxivResult`.
 - `query.rs` — Generic `ArxivQuery<S>` with builder methods (`with_search_query`, `with_id_list`, `with_max_results`, `with_start`, `with_sort_by`, `next_page_query`). Builds URL query parameters.
 - `search_query.rs` — `ISearchQuery` trait, `SearchTerm` (field:value), `SearchRange` (date ranges), and `SearchPredicate` (AND/OR/ANDNOT/Bracket combinators with lifetime `'a`).
@@ -69,6 +70,7 @@ All three jobs must pass. Clippy warnings are treated as errors (`--deny warning
 Tests are inline (`#[cfg(test)]` modules) in each source file:
 
 - `lib.rs` — 5 async integration tests (`#[tokio::test]`) that make real HTTP requests to the arXiv API. These may be slow or flaky due to network dependency.
+- `client.rs` — offline unit tests for retry/status handling, User-Agent, and the rate limiter (mock HTTP server, `tokio::time::pause`).
 - `query.rs` — 3 sync unit tests for query builder and URL parameter construction.
 - `search_query.rs` — 4 sync unit tests for search term formatting, date range formatting, and predicate composition.
 
@@ -76,7 +78,7 @@ Run all tests with `cargo test`. There is no separate integration test directory
 
 ## Code Conventions
 
-- **Error handling**: Uses `thiserror` with a custom `ArxivError` enum in `error.rs`. Public API returns `crate::Result<T>` (alias for `Result<T, ArxivError>`). Error variants include `RequestFailed`, `HttpStatus`, `ResponseBody`, `XmlParse`, `UrlParse`, and `DateTimeParse`, each wrapping the underlying error as a `#[source]`.
+- **Error handling**: Uses `thiserror` with a custom `ArxivError` enum in `error.rs`. Public API returns `crate::Result<T>` (alias for `Result<T, ArxivError>`). Error variants include `RequestFailed`, `HttpStatus`, `ResponseBody`, `XmlParse`, `UrlParse`, `DateTimeParse`, `ClientBuild`, and `HtmlNotAvailable`, each wrapping the underlying error as a `#[source]`.
 - **Async runtime**: Tokio with `features = ["full"]`. All I/O is async.
 - **Logging**: `tracing` crate with `#[instrument]` attributes, `debug!` and `warn!` macros.
 - **Serialization**: `serde` + `quick-xml` for XML deserialization. `serde_with` for datetime handling. XML field renames use `@` prefix for attributes (`@title`, `@rel`, etc.).

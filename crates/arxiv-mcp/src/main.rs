@@ -3,6 +3,7 @@ mod server;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use arxiv_api_rs::ArxivClient;
 use clap::Parser;
 use rmcp::transport::streamable_http_server::{
     session::local::LocalSessionManager, StreamableHttpServerConfig, StreamableHttpService,
@@ -28,6 +29,11 @@ struct Cli {
     /// Repeatable. When omitted, Origin validation is disabled.
     #[arg(long = "allowed-origin", value_name = "ORIGIN", requires = "http")]
     allowed_origins: Vec<String>,
+
+    /// `User-Agent` sent to arXiv. arXiv recommends including contact information,
+    /// e.g. `my-app/1.0 (mailto:me@example.com)`.
+    #[arg(long, value_name = "UA", env = "ARXIV_MCP_USER_AGENT")]
+    user_agent: Option<String>,
 }
 
 const MCP_PATH: &str = "/mcp";
@@ -42,14 +48,23 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let cli = Cli::parse();
+    let client = arxiv_client(&cli)?;
     match cli.http {
-        Some(addr) => serve_http(addr, http_config(&cli)).await,
-        None => serve_stdio().await,
+        Some(addr) => serve_http(addr, client, http_config(&cli)).await,
+        None => serve_stdio(client).await,
     }
 }
 
-async fn serve_stdio() -> anyhow::Result<()> {
-    let service = server::ArxivServer::default().serve(stdio()).await?;
+fn arxiv_client(cli: &Cli) -> anyhow::Result<ArxivClient> {
+    let mut builder = ArxivClient::builder();
+    if let Some(user_agent) = &cli.user_agent {
+        builder = builder.user_agent(user_agent);
+    }
+    Ok(builder.build()?)
+}
+
+async fn serve_stdio(client: ArxivClient) -> anyhow::Result<()> {
+    let service = server::ArxivServer::new(client).serve(stdio()).await?;
     service.waiting().await?;
     Ok(())
 }
@@ -65,16 +80,21 @@ fn http_config(cli: &Cli) -> StreamableHttpServerConfig {
     config
 }
 
-fn router(config: StreamableHttpServerConfig) -> axum::Router {
+fn router(client: ArxivClient, config: StreamableHttpServerConfig) -> axum::Router {
+    // Every session shares one client (and thus one rate limiter) toward arXiv.
     let service = StreamableHttpService::new(
-        || Ok(server::ArxivServer::default()),
+        move || Ok(server::ArxivServer::new(client.clone())),
         Arc::new(LocalSessionManager::default()),
         config,
     );
     axum::Router::new().nest_service(MCP_PATH, service)
 }
 
-async fn serve_http(addr: SocketAddr, config: StreamableHttpServerConfig) -> anyhow::Result<()> {
+async fn serve_http(
+    addr: SocketAddr,
+    client: ArxivClient,
+    config: StreamableHttpServerConfig,
+) -> anyhow::Result<()> {
     let ct = config.cancellation_token.clone();
     info!(
         allowed_hosts = ?config.allowed_hosts,
@@ -83,7 +103,7 @@ async fn serve_http(addr: SocketAddr, config: StreamableHttpServerConfig) -> any
     );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, router(config))
+    axum::serve(listener, router(client, config))
         .with_graceful_shutdown(async move {
             let _ = tokio::signal::ctrl_c().await;
             ct.cancel();
@@ -122,7 +142,11 @@ mod test {
     }
 
     async fn status(config: StreamableHttpServerConfig, req: Request<Body>) -> StatusCode {
-        router(config).oneshot(req).await.unwrap().status()
+        router(ArxivClient::default(), config)
+            .oneshot(req)
+            .await
+            .unwrap()
+            .status()
     }
 
     fn cli(args: &[&str]) -> Cli {

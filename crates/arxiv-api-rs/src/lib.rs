@@ -1,3 +1,4 @@
+mod client;
 mod error;
 #[cfg(feature = "html")]
 pub mod html_parser;
@@ -5,146 +6,13 @@ mod models;
 mod query;
 mod search_query;
 
+pub use client::{ArxivClient, ArxivClientBuilder};
 pub use error::{ArxivError, Result};
 #[cfg(feature = "html")]
 pub use html_parser::{ArxivPaper, ContentBlock, Reference, Section};
 pub use models::{ArxivAuthor, ArxivResult, Link, SearchResponse};
 pub use query::*;
 pub use search_query::{RangeField, SearchField, SearchPredicate, SearchRange, SearchTerm};
-
-use tracing::{debug, instrument, warn};
-
-const BASE_URL: &str = "https://export.arxiv.org/api/query";
-#[cfg(feature = "html")]
-const HTML_BASE_URL: &str = "https://arxiv.org/html/";
-
-#[derive(Debug, Clone)]
-pub struct ArxivClient {
-    client: reqwest::Client,
-    initial_interval: std::time::Duration,
-    n_retries: usize,
-}
-
-impl Default for ArxivClient {
-    fn default() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            initial_interval: std::time::Duration::from_secs(3),
-            n_retries: 3,
-        }
-    }
-}
-
-impl ArxivClient {
-    /// Create a new client. `interval` is the base delay before the first retry;
-    /// subsequent retries use exponential backoff (interval * 2^(attempt-1)).
-    pub fn new(interval: std::time::Duration, n_retries: usize) -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            initial_interval: interval,
-            n_retries,
-        }
-    }
-
-    #[instrument(skip(self, query), fields(n_retries = self.n_retries))]
-    pub async fn search<S: ToString>(&self, query: ArxivQuery<S>) -> Result<SearchResponse> {
-        let url = query.to_url(BASE_URL)?;
-        debug!(url = %url, "Fetching from arXiv API");
-
-        let mut errors = vec![];
-
-        for attempt in 1..=self.n_retries {
-            debug!(attempt, "Sending request");
-            let response = match self.client.get(&url).send().await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    warn!(attempt, error = %e, "Request failed");
-                    errors.push(e);
-                    let backoff = self.initial_interval * 2u32.saturating_pow(attempt as u32 - 1);
-                    debug!(?backoff, "Waiting before retry");
-                    tokio::time::sleep(backoff).await;
-                    continue;
-                }
-            };
-
-            let status = response.status();
-            debug!(%status, "Received response");
-
-            if !status.is_success() {
-                let body = response
-                    .text()
-                    .await
-                    .unwrap_or_else(|_| String::from("<failed to read body>"));
-                return Err(ArxivError::HttpStatus { status, body });
-            }
-
-            let text = response.text().await.map_err(ArxivError::ResponseBody)?;
-            let feed =
-                quick_xml::de::from_str::<models::Feed>(&text).map_err(ArxivError::XmlParse)?;
-
-            let response = SearchResponse::from_feed(feed);
-            debug!(count = response.results.len(), "Search completed");
-            return Ok(response);
-        }
-
-        Err(ArxivError::RequestFailed {
-            retries: self.n_retries,
-            errors,
-        })
-    }
-
-    /// Fetch the HTML version of an arXiv paper and parse it into an [`ArxivPaper`].
-    ///
-    /// The `arxiv_id` should be the paper identifier (e.g. `"2402.16893v1"`).
-    /// Not all arXiv papers have an HTML version; this method returns
-    /// [`ArxivError::HtmlNotAvailable`] when the HTML page returns a non-success status.
-    #[cfg(feature = "html")]
-    #[instrument(skip(self), fields(n_retries = self.n_retries))]
-    pub async fn fetch_html(&self, arxiv_id: &str) -> Result<html_parser::ArxivPaper> {
-        let url = format!("{HTML_BASE_URL}{arxiv_id}");
-        debug!(url = %url, "Fetching HTML from arXiv");
-
-        let mut errors = vec![];
-
-        for attempt in 1..=self.n_retries {
-            debug!(attempt, "Sending request");
-            let response = match self.client.get(&url).send().await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    warn!(attempt, error = %e, "Request failed");
-                    errors.push(e);
-                    let backoff = self.initial_interval * 2u32.saturating_pow(attempt as u32 - 1);
-                    debug!(?backoff, "Waiting before retry");
-                    tokio::time::sleep(backoff).await;
-                    continue;
-                }
-            };
-
-            let status = response.status();
-            debug!(%status, "Received response");
-
-            if !status.is_success() {
-                return Err(ArxivError::HtmlNotAvailable {
-                    arxiv_id: arxiv_id.to_string(),
-                });
-            }
-
-            let text = response.text().await.map_err(ArxivError::ResponseBody)?;
-            let paper = html_parser::ArxivPaper::parse(&text);
-            debug!(
-                sections = paper.sections.len(),
-                references = paper.references.len(),
-                "HTML parsed"
-            );
-            return Ok(paper);
-        }
-
-        Err(ArxivError::RequestFailed {
-            retries: self.n_retries,
-            errors,
-        })
-    }
-}
 
 #[cfg(test)]
 mod test {

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<article class="ltx_document">
+<h1 class="ltx_title ltx_title_document">Inline Content Test Paper</h1>
+<section class="ltx_section" id="S1">
+  <h2 class="ltx_title ltx_title_section"><span class="ltx_tag ltx_tag_section">1 </span>Mixed</h2>
+  <!-- Text around an inline tabular inside the same <p> -->
+  <div class="ltx_para">
+    <p class="ltx_p">Before the table <math class="ltx_Math" alttext="x" display="inline"><mi>x</mi></math>,
+    <span class="ltx_inline-block"><span class="ltx_tabular"><span class="ltx_tr"><span class="ltx_td">k</span><span class="ltx_td">v</span></span><span class="ltx_tr"><span class="ltx_td">1</span><span class="ltx_td">2</span></span></span></span>
+    and <em>after</em> it.</p>
+  </div>
+  <!-- An inline image inside running text -->
+  <div class="ltx_para">
+    <p class="ltx_p">Press the <img src="2401.00005v1/icon.png" class="ltx_graphics" alt="button" width="12" height="12"> button to start.</p>
+  </div>
+  <!-- A list whose second item holds a figure -->
+  <div class="ltx_para">
+    <ul class="ltx_itemize">
+      <li class="ltx_item"><span class="ltx_tag ltx_tag_item">•</span><div class="ltx_para"><p class="ltx_p">First item.</p></div></li>
+      <li class="ltx_item"><span class="ltx_tag ltx_tag_item">•</span><div class="ltx_para"><p class="ltx_p">Second item.</p>
+        <figure id="S1.F1" class="ltx_figure"><img src="2401.00005v1/item.png" class="ltx_graphics" alt="Refer to caption">
+        <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>In a list.</figcaption></figure>
+      </div></li>
+    </ul>
+  </div>
+  <!-- A theorem block with a display equation -->
+  <div class="ltx_theorem ltx_theorem_theorem" id="Thmtheorem1">
+    <h6 class="ltx_title ltx_runin ltx_title_theorem"><span class="ltx_tag ltx_tag_theorem">Theorem 1.</span></h6>
+    <div class="ltx_para"><p class="ltx_p">For all <math class="ltx_Math" alttext="n" display="inline"><mi>n</mi></math>:</p>
+    <table class="ltx_equation ltx_eqn_table"><tbody><tr class="ltx_equation ltx_eqn_row"><td class="ltx_eqn_cell"><math class="ltx_Math" alttext="n+0=n" display="block"><mi>n</mi></math></td></tr></tbody></table>
+    </div>
+  </div>
+  <!-- Table float with a multi-level header written with plain cells (no thead) -->
+  <figure id="S1.T1" class="ltx_table">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 1: </span>Accuracy by length.</figcaption>
+  <table class="ltx_tabular ltx_align_middle">
+  <tbody class="ltx_tbody">
+  <tr class="ltx_tr"><td class="ltx_td" rowspan="2">Model</td><td class="ltx_td" colspan="3">Length</td></tr>
+  <tr class="ltx_tr"><td class="ltx_td"><math class="ltx_Math" alttext="2^{6}" display="inline"><mn>64</mn></math></td><td class="ltx_td"><math class="ltx_Math" alttext="2^{7}" display="inline"><mn>128</mn></math></td><td class="ltx_td"><math class="ltx_Math" alttext="2^{8}" display="inline"><mn>256</mn></math></td></tr>
+  <tr class="ltx_tr"><td class="ltx_td">Mamba</td><td class="ltx_td">100.0</td><td class="ltx_td">100.0</td><td class="ltx_td">99.8</td></tr>
+  <tr class="ltx_tr"><td class="ltx_td">MHA</td><td class="ltx_td">99.6</td><td class="ltx_td">✗</td><td class="ltx_td">✗</td></tr>
+  </tbody>
+  <tfoot class="ltx_tfoot"><tr class="ltx_tr"><td class="ltx_td" colspan="4">✗: out of memory</td></tr></tfoot>
+  </table>
+  </figure>
+</section>
+</article>
+</body>
+</html>

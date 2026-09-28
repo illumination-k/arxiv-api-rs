@@ -7,6 +7,12 @@ pub struct ArxivPaper {
     pub authors: Vec<String>,
     pub abstract_text: String,
     pub sections: Vec<Section>,
+    /// Figures, tables and images placed before the first section (teaser
+    /// figures, header images), in document order.
+    pub leading_floats: Vec<ContentBlock>,
+    /// Figures and tables outside any section after the first one — typically
+    /// floats LaTeX emitted after the bibliography.
+    pub trailing_floats: Vec<ContentBlock>,
     pub references: Vec<Reference>,
 }
 
@@ -40,6 +46,8 @@ pub struct Figure {
     /// Images belonging directly to this figure (not to its panels).
     pub images: Vec<Image>,
     /// Sub-figures / sub-tables that carry their own caption (e.g. `(a)`, `(b)`).
+    /// For floats without any image or table (TikZ boxes, algorithms) this holds
+    /// the float's text as paragraphs.
     pub panels: Vec<ContentBlock>,
 }
 
@@ -53,9 +61,11 @@ pub struct Table {
     pub caption: String,
     /// Rows of the table as they appear in the HTML (spans are not expanded).
     pub rows: Vec<TableRow>,
-    /// Images inside the table float, e.g. when the table is rendered as a picture.
+    /// Images inside the table float, e.g. when the table is rendered as a picture
+    /// or cells contain images.
     pub images: Vec<Image>,
-    /// Sub-tables / sub-figures that carry their own caption.
+    /// Sub-tables / sub-figures that carry their own caption. For tables drawn
+    /// without `tabular` (e.g. TikZ boxes) this holds the text as paragraphs.
     pub panels: Vec<ContentBlock>,
 }
 
@@ -101,8 +111,8 @@ pub struct Reference {
 /// pathological input.
 const MAX_SPAN: usize = 1000;
 
-/// Alt text LaTeXML puts on every image; carries no information.
-const PLACEHOLDER_ALT: &str = "Refer to caption";
+/// Alt texts LaTeXML puts on images; they carry no information.
+const PLACEHOLDER_ALTS: [&str; 2] = ["Refer to caption", "[Uncaptioned image]"];
 
 impl ArxivPaper {
     /// Parse an arXiv HTML page into a structured [`ArxivPaper`].
@@ -113,6 +123,7 @@ impl ArxivPaper {
         let authors = extract_authors(&document);
         let abstract_text = extract_abstract(&document);
         let sections = extract_sections(&document);
+        let (leading_floats, trailing_floats) = extract_floats_outside_sections(&document);
         let references = extract_references(&document);
 
         Self {
@@ -120,6 +131,8 @@ impl ArxivPaper {
             authors,
             abstract_text,
             sections,
+            leading_floats,
+            trailing_floats,
             references,
         }
     }
@@ -134,37 +147,42 @@ impl ArxivPaper {
             let trimmed = base.path().trim_end_matches('/').to_string();
             base.set_path(&trimmed);
         }
-        for section in &mut self.sections {
-            for block in &mut section.body {
-                block.for_each_image_mut(&mut |img| {
-                    if let Ok(resolved) = base.join(&img.src) {
-                        img.src = resolved.to_string();
-                    }
-                });
-            }
+        let blocks = self
+            .leading_floats
+            .iter_mut()
+            .chain(self.sections.iter_mut().flat_map(|s| &mut s.body))
+            .chain(&mut self.trailing_floats);
+        for block in blocks {
+            block.for_each_image_mut(&mut |img| {
+                if let Ok(resolved) = base.join(&img.src) {
+                    img.src = resolved.to_string();
+                }
+            });
         }
+    }
+
+    /// All top-level blocks in document order, including floats outside sections.
+    fn blocks(&self) -> impl Iterator<Item = &ContentBlock> {
+        self.leading_floats
+            .iter()
+            .chain(self.sections.iter().flat_map(|s| &s.body))
+            .chain(&self.trailing_floats)
     }
 
     /// Iterate over all figures in the paper (top-level floats only).
     pub fn figures(&self) -> impl Iterator<Item = &Figure> {
-        self.sections
-            .iter()
-            .flat_map(|s| &s.body)
-            .filter_map(|b| match b {
-                ContentBlock::Figure(f) => Some(f),
-                _ => None,
-            })
+        self.blocks().filter_map(|b| match b {
+            ContentBlock::Figure(f) => Some(f),
+            _ => None,
+        })
     }
 
     /// Iterate over all tables in the paper (top-level floats only).
     pub fn tables(&self) -> impl Iterator<Item = &Table> {
-        self.sections
-            .iter()
-            .flat_map(|s| &s.body)
-            .filter_map(|b| match b {
-                ContentBlock::Table(t) => Some(t),
-                _ => None,
-            })
+        self.blocks().filter_map(|b| match b {
+            ContentBlock::Table(t) => Some(t),
+            _ => None,
+        })
     }
 
     /// Convert the parsed paper to Markdown.
@@ -187,9 +205,17 @@ impl ArxivPaper {
             md.push_str("\n\n");
         }
 
+        for block in &self.leading_floats {
+            block.write_markdown(&mut md);
+        }
+
         // Sections
         for section in &self.sections {
             section_to_markdown(section, &mut md);
+        }
+
+        for block in &self.trailing_floats {
+            block.write_markdown(&mut md);
         }
 
         // References
@@ -276,6 +302,12 @@ impl Table {
     /// A spanning cell's text is placed in its top-left position; the other
     /// positions it covers are empty strings.
     pub fn to_grid(&self) -> Vec<Vec<String>> {
+        self.expand(false)
+    }
+
+    /// Like [`Self::to_grid`], but with `fill_spans` every position a spanning
+    /// cell covers repeats its text.
+    fn expand(&self, fill_spans: bool) -> Vec<Vec<String>> {
         let mut grid: Vec<Vec<Option<String>>> = vec![Vec::new(); self.rows.len()];
 
         for (r, row) in self.rows.iter().enumerate() {
@@ -291,7 +323,7 @@ impl Table {
                         grid_row.resize(c + colspan, None);
                     }
                     for (dc, slot) in grid_row[c..c + colspan].iter_mut().enumerate() {
-                        *slot = Some(if dr == 0 && dc == 0 {
+                        *slot = Some(if fill_spans || (dr == 0 && dc == 0) {
                             cell.text.clone()
                         } else {
                             String::new()
@@ -313,8 +345,28 @@ impl Table {
     }
 
     /// Number of leading rows that form the table header.
+    ///
+    /// Rows marked as headers win. Otherwise the first row is the header, extended
+    /// downwards while it groups columns (`colspan`) or has cells spanning into the
+    /// next row — the usual shape of `\multicolumn` headers written with plain cells.
     fn header_row_count(&self) -> usize {
-        self.rows.iter().take_while(|r| r.is_header).count()
+        let marked = self.rows.iter().take_while(|r| r.is_header).count();
+        if marked > 0 {
+            return marked;
+        }
+        let mut n = 1;
+        while n < self.rows.len().saturating_sub(1) {
+            let groups_columns = self.rows[n - 1].cells.iter().any(|c| c.colspan > 1);
+            let spans_down = self.rows[..n]
+                .iter()
+                .enumerate()
+                .any(|(r, row)| row.cells.iter().any(|c| r + c.rowspan > n));
+            if !(groups_columns || spans_down) {
+                break;
+            }
+            n += 1;
+        }
+        n
     }
 
     /// Render the table as Markdown: caption, a GFM table, images, then panels.
@@ -332,15 +384,19 @@ impl Table {
         if width > 0 {
             // GFM tables have exactly one header row: merge multi-row headers
             // column-wise, and fall back to the first row when none is marked.
+            // Header cells repeat spanning labels ("Score BLEU", "Score PPL").
             let n_header = self.header_row_count().max(1);
+            let filled = self.expand(true);
             let header: Vec<String> = (0..width)
                 .map(|c| {
-                    grid[..n_header]
-                        .iter()
-                        .map(|row| row[c].as_str())
-                        .filter(|s| !s.is_empty())
-                        .collect::<Vec<_>>()
-                        .join(" ")
+                    let mut parts: Vec<&str> = Vec::new();
+                    for row in &filled[..n_header] {
+                        let text = row[c].as_str();
+                        if !text.is_empty() && parts.last() != Some(&text) {
+                            parts.push(text);
+                        }
+                    }
+                    parts.join(" ")
                 })
                 .collect();
 
@@ -372,12 +428,12 @@ impl Table {
 }
 
 impl Image {
-    /// The alt text, unless it is empty or LaTeXML's generic placeholder.
+    /// The alt text, unless it is empty or one of LaTeXML's generic placeholders.
     pub fn meaningful_alt(&self) -> Option<&str> {
         self.alt
             .as_deref()
             .map(str::trim)
-            .filter(|a| !a.is_empty() && *a != PLACEHOLDER_ALT)
+            .filter(|a| !a.is_empty() && !PLACEHOLDER_ALTS.contains(a))
     }
 }
 
@@ -521,39 +577,217 @@ fn is_float(el: ElementRef) -> bool {
     el.value().name() == "figure"
 }
 
+fn is_image(el: ElementRef) -> bool {
+    matches!(el.value().name(), "img" | "object")
+}
+
+fn is_caption(el: ElementRef) -> bool {
+    el.value().name() == "figcaption" || has_class(el, "ltx_caption")
+}
+
+/// Elements that start a new paragraph when they appear in running text.
+fn is_block(el: ElementRef) -> bool {
+    matches!(
+        el.value().name(),
+        "p" | "div"
+            | "section"
+            | "article"
+            | "figure"
+            | "table"
+            | "ul"
+            | "ol"
+            | "li"
+            | "dl"
+            | "dt"
+            | "dd"
+            | "blockquote"
+            | "pre"
+            | "h1"
+            | "h2"
+            | "h3"
+            | "h4"
+            | "h5"
+            | "h6"
+    )
+}
+
+/// Sections collected by [`extract_sections`].
+fn is_collected_section(el: ElementRef) -> bool {
+    el.value().name() == "section"
+        && [
+            "ltx_section",
+            "ltx_subsection",
+            "ltx_subsubsection",
+            "ltx_appendix",
+        ]
+        .iter()
+        .any(|c| has_class(el, c))
+}
+
 /// Whether the element is, or contains, content that is not plain text.
 fn contains_structure(el: ElementRef) -> bool {
     el.descendants()
         .filter_map(ElementRef::wrap)
-        .any(|d| is_float(d) || is_equation(d) || is_tabular(d))
+        .any(|d| is_float(d) || is_equation(d) || is_tabular(d) || is_image(d))
+}
+
+fn contains_image(el: ElementRef) -> bool {
+    el.descendants().filter_map(ElementRef::wrap).any(is_image)
+}
+
+/// An image outside of any float, as an uncaptioned [`Figure`].
+fn uncaptioned_figure(img: ElementRef) -> Option<ContentBlock> {
+    parse_image(img).map(|image| {
+        ContentBlock::Figure(Figure {
+            id: img.value().attr("id").map(String::from),
+            images: vec![image],
+            ..Default::default()
+        })
+    })
+}
+
+/// Collect floats and images inside the document but outside every section,
+/// split into those before the first section and those after it.
+fn extract_floats_outside_sections(document: &Html) -> (Vec<ContentBlock>, Vec<ContentBlock>) {
+    let mut leading = Vec::new();
+    let mut trailing = Vec::new();
+    let mut seen_section = false;
+
+    for el in document
+        .root_element()
+        .descendants()
+        .filter_map(ElementRef::wrap)
+    {
+        if is_collected_section(el) {
+            seen_section = true;
+            continue;
+        }
+        let candidate = is_float(el) || (is_image(el) && has_class(el, "ltx_graphics"));
+        if !candidate {
+            continue;
+        }
+        let mut in_document = false;
+        let mut nested = false;
+        for a in el.ancestors().filter_map(ElementRef::wrap) {
+            if is_float(a) || is_collected_section(a) {
+                nested = true;
+                break;
+            }
+            in_document |= has_class(a, "ltx_document");
+        }
+        if nested || !in_document {
+            continue;
+        }
+        let block = if is_float(el) {
+            Some(parse_float(el))
+        } else {
+            uncaptioned_figure(el)
+        };
+        let target = if seen_section {
+            &mut trailing
+        } else {
+            &mut leading
+        };
+        target.extend(block);
+    }
+
+    (leading, trailing)
 }
 
 /// Walk the children of a section / paragraph container, emitting content blocks
 /// in document order. Nested sections are skipped (they are collected separately),
 /// except `\paragraph{}` sections which are inlined.
 fn extract_blocks(container: ElementRef, blocks: &mut Vec<ContentBlock>) {
-    for child in child_elements(container) {
+    let mut sink = BlockSink {
+        blocks,
+        text: String::new(),
+        pending: Vec::new(),
+    };
+    sink.children(container);
+    sink.flush();
+}
+
+/// Accumulates inline content until a block boundary, so the text around an
+/// inline table or image (`<p>before <table>…</table> after</p>`) is kept.
+struct BlockSink<'b> {
+    blocks: &'b mut Vec<ContentBlock>,
+    /// Running text of the current paragraph.
+    text: String,
+    /// Inline images, emitted after the paragraph they appear in.
+    pending: Vec<ContentBlock>,
+}
+
+impl BlockSink<'_> {
+    /// Emit the running text as a paragraph, followed by its inline images.
+    fn flush(&mut self) {
+        let cleaned = clean_text(&self.text);
+        if !cleaned.is_empty() {
+            self.blocks.push(ContentBlock::Paragraph(cleaned));
+        }
+        self.text.clear();
+        self.blocks.append(&mut self.pending);
+    }
+
+    fn push(&mut self, block: ContentBlock) {
+        self.flush();
+        self.blocks.push(block);
+    }
+
+    fn children(&mut self, container: ElementRef) {
+        for node in container.children() {
+            match ElementRef::wrap(node) {
+                Some(el) => self.element(el),
+                None => {
+                    if let Node::Text(t) = node.value() {
+                        self.text.push_str(t);
+                    }
+                }
+            }
+        }
+    }
+
+    fn element(&mut self, child: ElementRef) {
         let name = child.value().name();
 
+        if is_caption(child) {
+            return;
+        }
         if is_heading(child) {
-            continue;
+            // Section titles are handled by `extract_sections`; run-in titles of
+            // theorems, proofs, etc. are kept as bold text.
+            let in_section = child
+                .parent()
+                .and_then(ElementRef::wrap)
+                .is_some_and(|p| p.value().name() == "section");
+            if !in_section {
+                let title = element_to_text(child);
+                if !title.is_empty() {
+                    self.push(ContentBlock::Paragraph(format!("**{title}**")));
+                }
+            }
+            return;
         }
         if name == "section" {
+            self.flush();
             if has_class(child, "ltx_paragraph") {
                 let title = extract_section_title(child);
                 if !title.is_empty() {
-                    blocks.push(ContentBlock::Paragraph(format!("**{title}**")));
+                    self.blocks
+                        .push(ContentBlock::Paragraph(format!("**{title}**")));
                 }
-                extract_blocks(child, blocks);
+                self.children(child);
+                self.flush();
             }
-            continue;
+            return;
         }
+
         if is_float(child) {
-            blocks.push(parse_float(child));
+            self.push(parse_float(child));
         } else if is_equation(child) {
             let latex = extract_equation(child);
+            self.flush();
             if !latex.is_empty() {
-                blocks.push(ContentBlock::Equation(latex));
+                self.blocks.push(ContentBlock::Equation(latex));
             }
         } else if is_tabular(child) {
             let table = Table {
@@ -561,16 +795,66 @@ fn extract_blocks(container: ElementRef, blocks: &mut Vec<ContentBlock>) {
                 rows: parse_tabular(child),
                 ..Default::default()
             };
+            self.flush();
             if !table.rows.is_empty() {
-                blocks.push(ContentBlock::Table(table));
+                self.blocks.push(ContentBlock::Table(table));
             }
-        } else if contains_structure(child) {
-            extract_blocks(child, blocks);
+        } else if is_image(child) {
+            self.pending.extend(uncaptioned_figure(child));
+        } else if name == "li" {
+            self.list_item(child);
+        } else if contains_structure(child) || has_class(child, "ltx_listing") {
+            // Listings are recursed into so each `ltx_listingline` is its own paragraph.
+            let block = is_block(child);
+            if block {
+                self.flush();
+            }
+            self.children(child);
+            if block {
+                self.flush();
+            }
+        } else if is_block(child) {
+            self.flush();
+            let para = element_to_text(child);
+            if !para.is_empty() {
+                self.blocks.push(ContentBlock::Paragraph(para));
+            }
         } else {
-            let text = element_to_text(child);
-            if !text.is_empty() {
-                blocks.push(ContentBlock::Paragraph(text));
+            collect_element(child, &mut self.text, false);
+        }
+    }
+
+    /// A list item becomes its blocks, with the first paragraph prefixed by a
+    /// Markdown bullet (`- `) or the item's own number (`1.`, `(a)`).
+    fn list_item(&mut self, li: ElementRef) {
+        self.flush();
+        let mut marker = None;
+        let start = self.blocks.len();
+        for node in li.children() {
+            match ElementRef::wrap(node) {
+                Some(el) if marker.is_none() && has_class(el, "ltx_tag") => {
+                    marker = Some(element_to_text(el));
+                }
+                Some(el) => self.element(el),
+                None => {
+                    if let Node::Text(t) = node.value() {
+                        self.text.push_str(t);
+                    }
+                }
             }
+        }
+        self.flush();
+
+        let marker = match marker.as_deref() {
+            None | Some("•" | "∙" | "◦" | "–" | "-" | "") => "-".to_string(),
+            Some(m) => m.to_string(),
+        };
+        match self.blocks.get_mut(start) {
+            Some(ContentBlock::Paragraph(text)) => *text = format!("{marker} {text}"),
+            _ => self.blocks.insert(
+                start.min(self.blocks.len()),
+                ContentBlock::Paragraph(marker),
+            ),
         }
     }
 }
@@ -594,36 +878,43 @@ fn collect_text(el: ElementRef, out: &mut String, skip_tags: bool) {
     for child in el.children() {
         match child.value() {
             Node::Text(text) => out.push_str(text),
-            Node::Element(elem) => {
-                let Some(child_el) = ElementRef::wrap(child) else {
-                    continue;
-                };
-                match elem.name() {
-                    "math" => {
-                        if let Some(alt) = elem.attr("alttext") {
-                            out.push('$');
-                            out.push_str(alt);
-                            out.push('$');
-                        } else {
-                            collect_text(child_el, out, skip_tags);
-                        }
-                    }
-                    "br" => out.push(' '),
-                    "img" | "object" | "script" | "style" => {}
-                    _ if skip_tags && has_class(child_el, "ltx_tag") => {}
-                    _ => {
-                        collect_text(child_el, out, skip_tags);
-                        // Keep adjacent cells / blocks from running together.
-                        if matches!(elem.name(), "td" | "th" | "tr" | "p" | "div" | "li")
-                            || is_cell(child_el)
-                            || has_class(child_el, "ltx_tr")
-                        {
-                            out.push(' ');
-                        }
-                    }
+            Node::Element(_) => {
+                if let Some(child_el) = ElementRef::wrap(child) {
+                    collect_element(child_el, out, skip_tags);
                 }
             }
             _ => {}
+        }
+    }
+}
+
+/// Append the text of a single element (see [`collect_text`]).
+fn collect_element(el: ElementRef, out: &mut String, skip_tags: bool) {
+    let elem = el.value();
+    match elem.name() {
+        "math" => {
+            if let Some(alt) = elem.attr("alttext") {
+                out.push('$');
+                out.push_str(alt);
+                out.push('$');
+            } else {
+                collect_text(el, out, skip_tags);
+            }
+        }
+        "br" => out.push(' '),
+        "img" | "object" | "script" | "style" => {}
+        _ if skip_tags && has_class(el, "ltx_tag") => {}
+        _ => {
+            collect_text(el, out, skip_tags);
+            // Keep adjacent cells / blocks from running together.
+            if matches!(elem.name(), "td" | "th" | "tr" | "p" | "div" | "li")
+                || is_cell(el)
+                || has_class(el, "ltx_tr")
+                || has_class(el, "ltx_p")
+                || has_class(el, "ltx_tag_item")
+            {
+                out.push(' ');
+            }
         }
     }
 }
@@ -647,17 +938,33 @@ fn parse_float(el: ElementRef) -> ContentBlock {
     let mut tabulars = Vec::new();
     let mut panels = Vec::new();
 
+    let table_class = has_class(el, "ltx_table");
+
     walk_float(el, &mut |d| {
         if is_float(d) {
             panels.push(parse_float(d));
             false
-        } else if d.value().name() == "figcaption" || has_class(d, "ltx_caption") {
+        } else if is_caption(d) {
             caption_el.get_or_insert(d);
             false
         } else if is_tabular(d) {
+            // In a figure, a tabular holding images is a layout grid
+            // (`\begin{tabular}` of `\includegraphics`): look inside it.
+            if !table_class && contains_image(d) {
+                return true;
+            }
+            // Images in table cells (icons, qualitative examples) are kept too.
+            if table_class {
+                images.extend(
+                    d.descendants()
+                        .filter_map(ElementRef::wrap)
+                        .filter(|e| is_image(*e))
+                        .filter_map(parse_image),
+                );
+            }
             tabulars.push(d);
             false
-        } else if matches!(d.value().name(), "img" | "object") {
+        } else if is_image(d) {
             if let Some(image) = parse_image(d) {
                 images.push(image);
             }
@@ -673,8 +980,13 @@ fn parse_float(el: ElementRef) -> ContentBlock {
     // classify by content when the class says "figure" but there is no image.
     let panels_are_tables =
         !panels.is_empty() && panels.iter().all(|p| matches!(p, ContentBlock::Table(_)));
-    let is_table = has_class(el, "ltx_table")
-        || (images.is_empty() && (!tabulars.is_empty() || panels_are_tables));
+    let is_table =
+        table_class || (images.is_empty() && (!tabulars.is_empty() || panels_are_tables));
+
+    // Nothing structured inside (TikZ box, algorithm listing): keep the text.
+    if images.is_empty() && tabulars.is_empty() && panels.is_empty() {
+        extract_blocks(el, &mut panels);
+    }
 
     if !is_table {
         // Tables that live directly inside a figure become panels.
@@ -1228,14 +1540,14 @@ mod test {
     fn test_table_spans_markdown() {
         let paper = parse("html_tables.html");
         let t = table(find_block(&paper, "S1.T2"));
-        // No header row: the first row becomes the header; empty rows are
+        // No marked header: the colspan/rowspan in the first row pull the second
+        // row into the header, spanning labels are repeated, empty rows are
         // dropped and pipes are escaped.
         assert_eq!(
             t.to_markdown(),
             "**Table 2:** Spans.\n\n\
-             | Model | Score |  |\n\
+             | Model | Score BLEU | Score PPL |\n\
              | --- | --- | --- |\n\
-             |  | BLEU | PPL |\n\
              | (A) | 25.8 | 4.92 |\n\
              |  | 24.9 | a\\|b |\n\n"
         );
@@ -1393,6 +1705,276 @@ mod test {
         assert_eq!(
             titles,
             vec![("1 Body", 1), ("1.1 Sub", 2), ("Appendix A Extra", 1)]
+        );
+    }
+
+    fn srcs(images: Vec<&Image>) -> Vec<&str> {
+        images.into_iter().map(|i| i.src.as_str()).collect()
+    }
+
+    fn paragraphs(blocks: &[ContentBlock]) -> Vec<&str> {
+        blocks
+            .iter()
+            .filter_map(|b| match b {
+                ContentBlock::Paragraph(t) => Some(t.as_str()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    // ---- html_image_grids.html --------------------------------------------
+
+    #[test]
+    fn test_image_grid_tabular_is_a_figure() {
+        let paper = parse("html_image_grids.html");
+        let fig = figure(find_block(&paper, "S1.F1"));
+        assert_eq!(fig.label.as_deref(), Some("Figure 1"));
+        assert_eq!(
+            srcs(fig.images.iter().collect()),
+            vec![
+                "2304.00001v1/grid/a1.jpg",
+                "2304.00001v1/grid/a2.jpg",
+                "2304.00001v1/grid/b1.jpg",
+                "2304.00001v1/grid/b2.jpg",
+            ]
+        );
+        assert!(fig.panels.is_empty(), "layout grid must not become a table");
+        assert_eq!(fig.images[0].meaningful_alt(), None);
+    }
+
+    #[test]
+    fn test_image_grid_inside_subfigure() {
+        let paper = parse("html_image_grids.html");
+        let fig = figure(find_block(&paper, "S1.F2"));
+        assert!(fig.images.is_empty());
+        assert_eq!(fig.panels.len(), 1);
+        let sub = figure(&fig.panels[0]);
+        assert_eq!(sub.label.as_deref(), Some("(a)"));
+        assert_eq!(
+            srcs(sub.images.iter().collect()),
+            vec!["2304.00001v1/masks/m1.jpg", "2304.00001v1/masks/m2.jpg"]
+        );
+        assert_eq!(fig.all_images().len(), 2);
+    }
+
+    #[test]
+    fn test_table_float_keeps_cell_images() {
+        let paper = parse("html_image_grids.html");
+        let t = table(find_block(&paper, "S1.T1"));
+        assert_eq!(t.to_grid(), vec![vec!["Model", "Logo"], vec!["SAM", ""]]);
+        assert_eq!(
+            srcs(t.images.iter().collect()),
+            vec!["2304.00001v1/icon.png"]
+        );
+        assert!(t.to_markdown().contains("![icon](2304.00001v1/icon.png)"));
+    }
+
+    #[test]
+    fn test_image_inside_svg_foreign_object() {
+        let paper = parse("html_image_grids.html");
+        let fig = figure(find_block(&paper, "S1.F3"));
+        assert_eq!(
+            srcs(fig.images.iter().collect()),
+            vec!["2304.00001v1/tikz_inner.png"]
+        );
+    }
+
+    #[test]
+    fn test_uncaptioned_placeholder_alt_is_not_used() {
+        let paper = parse("html_image_grids.html");
+        let md = paper.to_markdown();
+        assert!(!md.contains("Uncaptioned"), "{md}");
+        assert!(md.contains("![Figure 1](2304.00001v1/grid/a1.jpg)"));
+    }
+
+    // ---- html_outside_sections.html ---------------------------------------
+
+    #[test]
+    fn test_leading_floats_before_first_section() {
+        let paper = parse("html_outside_sections.html");
+        assert_eq!(paper.leading_floats.len(), 2);
+
+        let header = figure(&paper.leading_floats[0]);
+        assert_eq!(header.id.as_deref(), Some("g1"));
+        assert_eq!(header.label, None);
+        assert_eq!(header.caption, "");
+        assert_eq!(header.images[0].src, "2401.00004v1/images/header.jpeg");
+        assert_eq!(header.images[0].width, Some(381));
+
+        let teaser = figure(&paper.leading_floats[1]);
+        assert_eq!(teaser.label.as_deref(), Some("Figure 1"));
+        assert_eq!(teaser.caption, "Teaser.");
+    }
+
+    #[test]
+    fn test_trailing_floats_after_bibliography() {
+        let paper = parse("html_outside_sections.html");
+        assert_eq!(paper.trailing_floats.len(), 2);
+        assert_eq!(
+            figure(&paper.trailing_floats[0]).label.as_deref(),
+            Some("Figure 3")
+        );
+        let t = table(&paper.trailing_floats[1]);
+        assert_eq!(t.label.as_deref(), Some("Table 1"));
+        assert_eq!(t.to_grid(), vec![vec!["a", "b"], vec!["1", "2"]]);
+
+        // The in-section figure is not duplicated.
+        assert_eq!(paper.sections[0].body.len(), 2);
+    }
+
+    #[test]
+    fn test_floats_outside_sections_in_iterators_and_markdown() {
+        let mut paper = parse("html_outside_sections.html");
+        let labels: Vec<_> = paper.figures().map(|f| f.label.clone()).collect();
+        assert_eq!(
+            labels,
+            vec![
+                None,
+                Some("Figure 1".to_string()),
+                Some("Figure 2".to_string()),
+                Some("Figure 3".to_string()),
+            ]
+        );
+        assert_eq!(paper.tables().count(), 1);
+
+        let md = paper.to_markdown();
+        let pos = |needle: &str| md.find(needle).unwrap_or_else(|| panic!("{needle}: {md}"));
+        assert!(pos("## Abstract") < pos("**Figure 1:** Teaser."));
+        assert!(pos("**Figure 1:** Teaser.") < pos("## 1 Introduction"));
+        assert!(pos("**Figure 2:**") < pos("**Figure 3:**"));
+        assert!(pos("**Table 1:** A late table.") < pos("## References"));
+        assert!(!md.contains("/static/") && !md.contains("[LOGO]"), "{md}");
+
+        paper.resolve_image_urls(&url::Url::parse("https://arxiv.org/html/2401.00004v1").unwrap());
+        assert_eq!(
+            figure(&paper.leading_floats[1]).images[0].src,
+            "https://arxiv.org/html/2401.00004v1/teaser.png"
+        );
+        assert_eq!(
+            figure(&paper.trailing_floats[0]).images[0].src,
+            "https://arxiv.org/html/2401.00004v1/late_figure.png"
+        );
+    }
+
+    // ---- html_text_floats.html --------------------------------------------
+
+    #[test]
+    fn test_algorithm_float_lines() {
+        let paper = parse("html_text_floats.html");
+        let alg = figure(find_block(&paper, "alg1"));
+        assert_eq!(alg.label.as_deref(), Some("Algorithm 1"));
+        assert_eq!(alg.caption, "Self-Rag Inference");
+        assert!(alg.images.is_empty());
+        assert_eq!(
+            paragraphs(&alg.panels),
+            vec![
+                r"1: Generator LM $\mathcal{M}$",
+                "2: if Retrieve == Yes then",
+                "3: Retrieve passages",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_tikz_box_table_keeps_text() {
+        let paper = parse("html_text_floats.html");
+        let t = table(find_block(&paper, "A4.T8"));
+        assert_eq!(t.label.as_deref(), Some("Table 8"));
+        assert!(t.rows.is_empty() && t.images.is_empty());
+        assert_eq!(
+            paragraphs(&t.panels),
+            vec!["Instructions Given an instruction, decide whether retrieval helps."]
+        );
+        assert_eq!(
+            t.to_markdown(),
+            "**Table 8:** Instructions and demonstrations.\n\n\
+             Instructions Given an instruction, decide whether retrieval helps.\n\n"
+        );
+    }
+
+    #[test]
+    fn test_tikz_figure_labels_do_not_run_together() {
+        let paper = parse("html_text_floats.html");
+        let fig = figure(find_block(&paper, "S1.F1"));
+        assert_eq!(paragraphs(&fig.panels), vec!["Encoder Decoder"]);
+    }
+
+    // ---- html_inline_content.html -----------------------------------------
+
+    #[test]
+    fn test_text_around_inline_tabular_is_kept() {
+        let paper = parse("html_inline_content.html");
+        let body = &paper.sections[0].body;
+        assert!(matches!(&body[0], ContentBlock::Paragraph(t) if t == "Before the table $x$,"));
+        assert_eq!(
+            table(&body[1]).to_grid(),
+            vec![vec!["k", "v"], vec!["1", "2"]]
+        );
+        assert!(matches!(&body[2], ContentBlock::Paragraph(t) if t == "and after it."));
+    }
+
+    #[test]
+    fn test_inline_image_does_not_split_paragraph() {
+        let paper = parse("html_inline_content.html");
+        let body = &paper.sections[0].body;
+        assert!(
+            matches!(&body[3], ContentBlock::Paragraph(t) if t == "Press the button to start."),
+            "{:?}",
+            body[3]
+        );
+        let icon = figure(&body[4]);
+        assert_eq!(icon.images[0].src, "2401.00005v1/icon.png");
+        assert_eq!(icon.images[0].meaningful_alt(), Some("button"));
+    }
+
+    #[test]
+    fn test_list_items_and_figure_in_item() {
+        let paper = parse("html_inline_content.html");
+        let body = &paper.sections[0].body;
+        assert!(matches!(&body[5], ContentBlock::Paragraph(t) if t == "- First item."));
+        assert!(matches!(&body[6], ContentBlock::Paragraph(t) if t == "- Second item."));
+        assert_eq!(figure(&body[7]).label.as_deref(), Some("Figure 1"));
+    }
+
+    #[test]
+    fn test_theorem_title_and_equation() {
+        let paper = parse("html_inline_content.html");
+        let body = &paper.sections[0].body;
+        assert!(matches!(&body[8], ContentBlock::Paragraph(t) if t == "**Theorem 1.**"));
+        assert!(matches!(&body[9], ContentBlock::Paragraph(t) if t == "For all $n$:"));
+        assert!(matches!(&body[10], ContentBlock::Equation(l) if l == "n+0=n"));
+    }
+
+    #[test]
+    fn test_multilevel_header_without_thead() {
+        let paper = parse("html_inline_content.html");
+        let t = table(find_block(&paper, "S1.T1"));
+        assert!(t.rows.iter().all(|r| !r.is_header));
+        assert_eq!(t.rows.len(), 5, "tfoot rows are included");
+        assert_eq!(
+            t.to_markdown(),
+            "**Table 1:** Accuracy by length.\n\n\
+             | Model | Length $2^{6}$ | Length $2^{7}$ | Length $2^{8}$ |\n\
+             | --- | --- | --- | --- |\n\
+             | Mamba | 100.0 | 100.0 | 99.8 |\n\
+             | MHA | 99.6 | ✗ | ✗ |\n\
+             | ✗: out of memory |  |  |  |\n\n"
+        );
+    }
+
+    #[test]
+    fn test_header_heuristic_keeps_a_body_row() {
+        // A single row with a colspan must not swallow the whole table.
+        let t = Table {
+            rows: vec![
+                row(false, vec![cell("Group", false, 2, 1)]),
+                row(false, vec![cell("a", false, 1, 1), cell("b", false, 1, 1)]),
+            ],
+            ..Default::default()
+        };
+        assert_eq!(
+            t.to_markdown(),
+            "| Group | Group |\n| --- | --- |\n| a | b |\n\n"
         );
     }
 }

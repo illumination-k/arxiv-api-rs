@@ -63,7 +63,7 @@ Tests are inline (`#[cfg(test)]` modules) in each source file:
 - `lib.rs` — 5 async integration tests (`#[tokio::test]`) that make real HTTP requests to the arXiv API. These may be slow or flaky due to network dependency.
 - `query.rs` — 3 sync unit tests for query builder and URL parameter construction.
 - `search_query.rs` — 4 sync unit tests for search term formatting, date range formatting, and predicate composition.
-- `html_parser.rs` — sync unit tests (feature `html`) over HTML fixtures in `tests/fixtures/` (`sample_paper.html`, `html_figures.html`, `html_tables.html`, `html_structure.html`) modeled on real LaTeXML output.
+- `html_parser.rs` — sync unit tests (feature `html`) over HTML fixtures in `tests/fixtures/` (`sample_paper.html` and `html_*.html`: figures, tables, image grids, floats outside sections, text-only floats, inline content) modeled on real LaTeXML output.
 
 Run all tests with `cargo test`. There is no separate integration test directory.
 

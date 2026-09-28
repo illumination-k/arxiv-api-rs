@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<nav class="ltx_page_navbar"><img src="/static/nav.png" class="ltx_graphics" alt="nav"></nav>
+<div class="ltx_page_main">
+<article class="ltx_document">
+<h1 class="ltx_title ltx_title_document">Floats Outside Sections</h1>
+<div class="ltx_abstract"><h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p class="ltx_p">Short abstract.</p>
+</div>
+<!-- Uncaptioned header image directly in a paragraph before the first section -->
+<div id="p1" class="ltx_para"> <img src="2401.00004v1/images/header.jpeg" id="g1" class="ltx_graphics ltx_centering ltx_img_landscape" width="381" height="127" alt="[Uncaptioned image]">
+</div>
+<!-- Teaser figure before the first section -->
+<figure id="S0.F1" class="ltx_figure"><img src="2401.00004v1/teaser.png" class="ltx_graphics" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Teaser.</figcaption>
+</figure>
+<section class="ltx_section" id="S1">
+  <h2 class="ltx_title ltx_title_section"><span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+  <div class="ltx_para"><p class="ltx_p">See Figure 1.</p></div>
+  <figure id="S1.F2" class="ltx_figure"><img src="2401.00004v1/in_section.png" class="ltx_graphics" alt="Refer to caption">
+  <figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>In a section.</figcaption>
+  </figure>
+</section>
+<section class="ltx_bibliography" id="bib">
+  <h2 class="ltx_title ltx_title_bibliography">References</h2>
+  <ul class="ltx_biblist">
+    <li class="ltx_bibitem" id="bib.bib1"><span class="ltx_tag ltx_role_refnum ltx_tag_bibitem">[1]</span><span class="ltx_bibblock">Some reference.</span></li>
+  </ul>
+</section>
+<!-- Floats LaTeX emitted after the bibliography -->
+<figure id="A0.F3" class="ltx_figure"><img src="2401.00004v1/late_figure.png" class="ltx_graphics" alt="Refer to caption">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 3: </span>A late figure.</figcaption>
+</figure>
+<figure id="A0.T1" class="ltx_table">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table 1: </span>A late table.</figcaption>
+<table class="ltx_tabular"><tr class="ltx_tr"><td class="ltx_td">a</td><td class="ltx_td">b</td></tr><tr class="ltx_tr"><td class="ltx_td">1</td><td class="ltx_td">2</td></tr></table>
+</figure>
+</article>
+<footer class="ltx_page_footer"><div class="ltx_page_logo"><img alt="[LOGO]" src="data:image/png;base64,AAAA"></div></footer>
+</div>
+</body>
+</html>
